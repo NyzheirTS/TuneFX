@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="703.0" prefWidth="1073.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.CenterViewController">
+   <center>
+      <VBox prefHeight="517.0" style="-fx-background-color: green;" BorderPane.alignment="CENTER" />
+   </center>
+   <top>
+      <VBox alignment="BOTTOM_CENTER" prefHeight="186.0" BorderPane.alignment="CENTER">
+         <children>
+            <HBox alignment="CENTER_LEFT" prefHeight="142.0" spacing="12.0">
+               <children>
+                  <ImageView fitHeight="130.0" fitWidth="130.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Home.png" />
+                     </image>
+                  </ImageView>
+                  <VBox alignment="CENTER_LEFT">
+                     <children>
+                        <Label prefHeight="58.0" prefWidth="337.0" text="Home" textFill="WHITE">
+                           <font>
+                              <Font size="58.0" />
+                           </font>
+                        </Label>
+                        <Label prefHeight="18.0" prefWidth="146.0" text="100 Tracks" textFill="WHITE">
+                           <VBox.margin>
+                              <Insets left="5.0" />
+                           </VBox.margin>
+                        </Label>
+                     </children>
+                  </VBox>
+                  <HBox prefHeight="100.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
+                  <VBox alignment="BOTTOM_CENTER">
+                     <children>
+                        <HBox alignment="CENTER" style="-fx-border-color: white;">
+                           <children>
+                              <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Search.png" />
+                                 </image>
+                              </ImageView>
+                              <TextField prefWidth="221.0" promptText="Search" />
+                           </children>
+                        </HBox>
+                     </children>
+                     <padding>
+                        <Insets bottom="11.0" />
+                     </padding>
+                  </VBox>
+               </children>
+            </HBox>
+            <HBox maxHeight="3.0" minHeight="3.0" prefHeight="3.0" style="-fx-background-color: lightblue;" />
+            <HBox prefHeight="41.0" prefWidth="1052.0" style="-fx-background-color: brown;" />
+         </children>
+      </VBox>
+   </top>
+   <padding>
+      <Insets left="6.0" right="12.0" />
+   </padding>
+</BorderPane>
