@@ -10,7 +10,7 @@ public class TimeUtils {
         if (duration == null){
             return "0:00";
         }
-        int seconds = (int) Math.ceil(duration.toSeconds());
+        int seconds = (int) Math.floor(duration.toSeconds());
         int minutes = seconds / 60;
         int remainder = seconds % 60;
 

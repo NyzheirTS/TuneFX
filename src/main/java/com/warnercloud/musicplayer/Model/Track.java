@@ -4,22 +4,30 @@ import javafx.scene.image.Image;
 
 import javafx.util.Duration;
 
+import java.io.File;
+
 public class Track {
+    private Integer index;
     private String title;
     private String artist;
     private String album;
     private String albumArtist;
     private String genre;
-    private Integer year;
-    private Integer trackNumber;
-    private Integer trackCount;
+    private String year;
+    private String trackNumber;
+    private String trackCount;
     private Integer discNumber;
     private Integer discCount;
     private Duration duration;
     private Image cover;
-    private String filePath;
+    private final File filePath;
 
-    public Track(String filePath) {
+    public Track(File filePath, int index) {
+        this.filePath = filePath;
+        this.index = index;
+    }
+
+    public Track(File filePath) {
         this.filePath = filePath;
     }
 
@@ -40,14 +48,14 @@ public class Track {
     public String getGenre() { return genre; }
     public void setGenre(String genre) { this.genre = genre; }
 
-    public Integer getYear() { return year; }
-    public void setYear(Integer year) { this.year = year; }
+    public String getYear() { return year; }
+    public void setYear(String year) { this.year = year; }
 
-    public Integer getTrackNumber() { return trackNumber; }
-    public void setTrackNumber(Integer trackNumber) { this.trackNumber = trackNumber; }
+    public String getTrackNumber() { return trackNumber; }
+    public void setTrackNumber(String trackNumber) { this.trackNumber = trackNumber; }
 
-    public Integer getTrackCount() { return trackCount; }
-    public void setTrackCount(Integer trackCount) { this.trackCount = trackCount; }
+    public String getTrackCount() { return trackCount; }
+    public void setTrackCount(String trackCount) { this.trackCount = trackCount; }
 
     public Integer getDiscNumber() { return discNumber; }
     public void setDiscNumber(Integer discNumber) { this.discNumber = discNumber; }
@@ -61,7 +69,15 @@ public class Track {
     public Image getCover() { return cover; }
     public void setCover(Image cover) { this.cover = cover; }
 
-    public String getFilePath() { return filePath; }
+    public File getFilePath() { return filePath; }
+
+    public Integer getIndex() {
+        return index;
+    }
+
+    public void setIndex(Integer index) {
+        this.index = index;
+    }
 
     // Optional toString() for debugging
     @Override

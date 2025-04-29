@@ -5,14 +5,10 @@ import com.warnercloud.musicplayer.Factory.MediaBarFactory;
 import com.warnercloud.musicplayer.Factory.SideBarFactory;
 import com.warnercloud.musicplayer.Model.Track;
 import com.warnercloud.musicplayer.Service.MediaService;
+import com.warnercloud.musicplayer.Service.PlaylistNavigationService;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -20,34 +16,41 @@ import javafx.stage.FileChooser;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 
 public class MainController implements Initializable {
 
     @FXML public BorderPane root;
-    private FileChooser chooser = new FileChooser();
+    private final FileChooser chooser = new FileChooser();
     private TestClassChangeListener changeListener = new TestClassChangeListener();
+    private final File playlistFile = new File("C:/Users/eshas/OneDrive/Desktop/Kpop/Playlist/");
     private final HBox mediaBar = MediaBarFactory.createMediaBar();
     private final VBox sideBar = SideBarFactory.createSideBar();
     private final BorderPane centerView = CenterViewFactory.createMediaBar();
 
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         // Initialize FileChooser for loading music
-        chooser.setTitle("Select your music");
+        /*chooser.setTitle("Select your music");
         chooser.setInitialDirectory(new File("C:/Users/eshas/OneDrive/Desktop/Kpop/Playlist/"));
         File file = chooser.showOpenDialog(null);
 
         if (file != null) {
             loadTrack(file);
-        }
+        }*/
+        getPlaylists(playlistFile, () -> loadFirstTrack(PlaylistNavigationService.getInstance().playNext().getFilePath()));
         initUI();
     }
 
-    private void loadTrack(File file) {
+    private void loadFirstTrack(File file) {
         // Create Track object to hold the track information
-        Track currentTrack = new Track(file.toURI().toString());
+        Track currentTrack = new Track(file, 0);
         // MediaService used to load and prepare the track
         MediaService.getInstance().loadTrack(currentTrack, this::onMetadataReady);
         MediaService.getInstance().play();
@@ -59,7 +62,6 @@ public class MainController implements Initializable {
 
     }
 
-
     private void initUI(){
         Platform.runLater(() -> {
             root.setBottom(mediaBar);
@@ -68,31 +70,19 @@ public class MainController implements Initializable {
         });
     }
 
-
-
-    // Play/Pause button functionality
-    public void play(ActionEvent actionEvent) {
-        if (MediaService.getInstance().isPlaying()) {
-            MediaService.getInstance().pause();
-        } else {
-            MediaService.getInstance().play();
+    private void getPlaylists(File playlistFile, Runnable callback) {
+        List<Track> trackList = new ArrayList<>();
+        int index = -1;
+        for (final File fileEntry : Objects.requireNonNull(playlistFile.listFiles())) {
+            if (fileEntry.isDirectory()) {
+                getPlaylists(fileEntry, () -> {});
+            } else {
+                trackList.add(new Track(fileEntry, index++));
+            }
         }
+        PlaylistNavigationService.getInstance().setTracks(trackList);
+        PlaylistNavigationService.getInstance().getAllTracks().forEach(track -> {System.out.println("Path: " + track.getFilePath() + ", Index: " + track.getIndex());});
+        callback.run();
     }
 
-    // Stop button functionality
-    public void stop(ActionEvent actionEvent) {
-        MediaService.getInstance().stop();
-    }
-
-    public void newTrack(ActionEvent actionEvent) {
-        File file = chooser.showOpenDialog(null);
-
-        if (file != null) {
-            loadTrack(file);
-        }
-    }
-
-    public void printTitle(ActionEvent actionEvent) {
-        System.out.println(MediaService.getInstance().getPlayer().getMedia().getMetadata().get("title").toString());
-    }
 }

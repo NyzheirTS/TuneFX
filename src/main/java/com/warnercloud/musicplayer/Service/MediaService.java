@@ -1,16 +1,19 @@
 package com.warnercloud.musicplayer.Service;
 
-import javafx.collections.MapChangeListener;
+import com.mpatric.mp3agic.ID3v2;
+import com.mpatric.mp3agic.InvalidDataException;
+import com.mpatric.mp3agic.Mp3File;
+import com.mpatric.mp3agic.UnsupportedTagException;
 import javafx.scene.image.Image;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import com.warnercloud.musicplayer.Model.Track;
 import javafx.util.Duration;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public class MediaService {
@@ -20,7 +23,7 @@ public class MediaService {
     private MediaPlayer player;
     private Track currentTrack;
     private final List<Consumer<Track>> trackChangeListeners = new ArrayList<>();
-    private static final Set<String> EXPECTED_KEYS = Set.of("title", "artist", "album", "album artist", "genre", "year", "track number", "track count","disc number", "disc count", "duration", "image");
+
 
     private MediaService() { }
 
@@ -32,55 +35,51 @@ public class MediaService {
     }
 
     public void loadTrack(Track track, Consumer<Track> onMetadataReady) {
-        if (player != null) {
-            player.dispose(); // Clean up existing player
-        }
-        Media media = new Media(track.getFilePath());
+        if (player != null) player.dispose(); // Clean up existing player
+
+        Media media = new Media(track.getFilePath().toURI().toString());
         player = new MediaPlayer(media);
-        extractMetadata(media, track, onMetadataReady);
+        player.setOnEndOfMedia(this::playNextTrack);
+        try{
+            Mp3File mp3File = new Mp3File(track.getFilePath());
+            extractMetadata(mp3File, track, onMetadataReady);
+        } catch (UnsupportedTagException | InvalidDataException | IOException _) {}
     }
 
-    private void extractMetadata(Media media, Track track, Consumer<Track> onMetadataReady) {
-        Set<String> recievedKeys = new HashSet<>();
-        media.getMetadata().addListener((MapChangeListener.Change<? extends String, ?> change) -> {
-            if (change.wasAdded()) {
-                String key = change.getKey();
-                Object value = change.getValueAdded();
+    private void playNextTrack() {
+        Track nextTrack = PlaylistNavigationService.getInstance().playNext();
+        if (nextTrack != null) {
+            loadTrack(nextTrack, track -> play());
+        }
+    }
 
-                switch (key) {
-                    case "title" -> track.setTitle((String) value);
-                    case "artist" -> track.setArtist((String) value);
-                    case "album" -> track.setAlbum((String) value);
-                    case "album artist" -> track.setAlbumArtist((String) value);
-                    case "genre" -> track.setGenre((String) value);
-                    case "year" -> track.setYear((Integer) value);
-                    case "track number" -> track.setTrackNumber((Integer) value);
-                    case "track count" -> track.setTrackCount((Integer) value);
-                    case "disc number" -> track.setDiscNumber((Integer) value);
-                    case "disc count" -> track.setDiscCount((Integer) value);
-                    case "duration" -> {
-                        if (value instanceof Duration duration) {
-                            track.setDuration(duration);
-                        }
-                    }
-                    case "image" -> {
-                        if (value instanceof Image image) {
-                            track.setCover(image);
-                        }
-                    }
-                }
-                if (EXPECTED_KEYS.contains(key)) {
-                    recievedKeys.add(key);
-                }
-                if(recievedKeys.containsAll(EXPECTED_KEYS)){
-                    // Fire update callback
-                    onMetadataReady.accept(track);
-                    currentTrack = track;
-                    notifyTrackChangeListeners(track);
-                }
+    private void extractMetadata(Mp3File file, Track track, Consumer<Track> onMetadataReady) {
+        if (file.hasId3v2Tag() || file.hasId3v1Tag()) {
+            ID3v2 id3v2 = file.getId3v2Tag();
+
+            track.setTitle(id3v2.getTitle());
+            track.setArtist(id3v2.getArtist());
+            track.setAlbum(id3v2.getAlbum());
+            track.setAlbumArtist(id3v2.getAlbumArtist());
+            track.setGenre(id3v2.getGenreDescription());
+            track.setYear(id3v2.getYear());
+            track.setTrackNumber(id3v2.getTrack().replaceAll("^([0-9]+)/(.*)$", "$1"));
+            track.setTrackCount(id3v2.getTrack().replaceAll("^([0-9]+)/(.*)$", "$2"));
+            track.setDuration(Duration.millis(file.getLengthInMilliseconds()));
+
+            byte[] imageData = id3v2.getAlbumImage();
+            if (imageData != null) {
+                ByteArrayInputStream bis = new ByteArrayInputStream(imageData);
+                track.setCover(new Image(bis));
             }
-        });
+            // Fire update callback
+            onMetadataReady.accept(track);
+            currentTrack = track;
+            notifyTrackChangeListeners(track);
+        }
+
     }
+
 
     public void play() {
         if (player != null) player.play();
