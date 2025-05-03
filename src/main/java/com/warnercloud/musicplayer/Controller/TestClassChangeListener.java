@@ -12,7 +12,6 @@ public class TestClassChangeListener {
 
    public TestClassChangeListener() {
         MediaService.getInstance().addTrackChangeListener(this::onTrackChanged);
-        System.out.println("hello");
    }
 
     private void onTrackChanged(Track track) {

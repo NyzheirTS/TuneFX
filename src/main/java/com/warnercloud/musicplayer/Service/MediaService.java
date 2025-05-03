@@ -5,27 +5,38 @@ import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
 import com.mpatric.mp3agic.UnsupportedTagException;
 import javafx.scene.image.Image;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 import com.warnercloud.musicplayer.Model.Track;
 import javafx.util.Duration;
+import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
+import uk.co.caprica.vlcj.player.base.MediaPlayer;
+import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 import java.util.function.Consumer;
 
 public class MediaService {
 
     private static MediaService instance; // Singleton
 
-    private MediaPlayer player;
+    private final MediaPlayerFactory mediaPlayerFactory;
+    private MediaPlayer mediaPlayer;
     private Track currentTrack;
     private final List<Consumer<Track>> trackChangeListeners = new ArrayList<>();
+    private long lastLoadTime = 0;
+    private static final long DEBOUNCE_INTERVAL_MS = 350;
+    private boolean isTrackLoading = false;
+    private Timer timer;
 
 
-    private MediaService() { }
+    private MediaService() {
+        mediaPlayerFactory = new MediaPlayerFactory();
+        mediaPlayer = mediaPlayerFactory.mediaPlayers().newMediaPlayer();
+        playNextTrack();
+    }
 
     public static MediaService getInstance() {
         if (instance == null) {
@@ -35,26 +46,55 @@ public class MediaService {
     }
 
     public void loadTrack(Track track, Consumer<Track> onMetadataReady) {
-        if (player != null) player.dispose(); // Clean up existing player
+       /* if (isTrackLoading) return;
+        isTrackLoading = true;
 
-        Media media = new Media(track.getFilePath().toURI().toString());
-        player = new MediaPlayer(media);
-        player.setOnEndOfMedia(this::playNextTrack);
-        try{
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastLoadTime < DEBOUNCE_INTERVAL_MS) {
+            isTrackLoading = false;
+            return;
+        }
+        lastLoadTime = currentTime;*/
+
+        try {
+            // Extract metadata using mp3agic
             Mp3File mp3File = new Mp3File(track.getFilePath());
             extractMetadata(mp3File, track, onMetadataReady);
-        } catch (UnsupportedTagException | InvalidDataException | IOException _) {}
-    }
 
-    private void playNextTrack() {
-        Track nextTrack = PlaylistNavigationService.getInstance().playNext();
-        if (nextTrack != null) {
-            loadTrack(nextTrack, track -> play());
+            // VLCJ player setup
+            if (mediaPlayer != null) {
+                mediaPlayer.controls().stop();
+            }
+
+            boolean success = mediaPlayer.media().play(track.getFilePath().toString());
+
+            if (!success) {
+                System.err.println("Failed to play track: " + track.getFilePath());
+            }
+
+            isTrackLoading = false;
+            currentTrack = track;
+            notifyTrackChangeListeners(track);
+        } catch (UnsupportedTagException | InvalidDataException | IOException e) {
+            isTrackLoading = false;
+            System.err.println("Error loading track" + e.getMessage());
         }
     }
 
+    private void playNextTrack() {
+        mediaPlayer.events().addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
+            @Override
+            public void finished(final MediaPlayer mediaPlayer) {
+                Track nextTrack = PlaylistNavigationService.getInstance().playNext();
+                if (nextTrack != null && !mediaPlayer.controls().getRepeat()) {
+                    mediaPlayer.submit(() -> loadTrack(nextTrack, track -> play()));
+                }
+            }
+        });
+    }
+
     private void extractMetadata(Mp3File file, Track track, Consumer<Track> onMetadataReady) {
-        if (file.hasId3v2Tag() || file.hasId3v1Tag()) {
+        if (file.hasId3v2Tag()) {
             ID3v2 id3v2 = file.getId3v2Tag();
 
             track.setTitle(id3v2.getTitle());
@@ -70,49 +110,55 @@ public class MediaService {
             byte[] imageData = id3v2.getAlbumImage();
             if (imageData != null) {
                 ByteArrayInputStream bis = new ByteArrayInputStream(imageData);
-                track.setCover(new Image(bis));
+                track.setCover(new Image(bis, 93, 93, true, true));
             }
-            // Fire update callback
-            onMetadataReady.accept(track);
-            currentTrack = track;
-            notifyTrackChangeListeners(track);
         }
-
+        // Fire update callback
+        onMetadataReady.accept(track);
     }
 
+    public void seek(long millis) {
+        if (mediaPlayer != null) {
+            mediaPlayer.controls().setTime(millis);
+        }
+    }
+
+    public long getCurrentTime() {
+        return mediaPlayer != null ? mediaPlayer.status().time() : 0;
+    }
+
+    public long getMediaDuration() {
+        return mediaPlayer != null ? mediaPlayer.media().info().duration() : 0;
+    }
+
+    public void setRepeat(boolean repeat) {
+        if (mediaPlayer != null) {
+            mediaPlayer.controls().setRepeat(repeat);
+        }
+    }
+
+    public boolean repeatEnabled(){
+        return mediaPlayer.controls().getRepeat();
+    }
+
+    public String printVolume(){
+       return String.valueOf(mediaPlayer.audio().volume());
+    }
 
     public void play() {
-        if (player != null) player.play();
+        if (mediaPlayer != null) {
+            mediaPlayer.controls().play();
+        }
     }
 
     public void pause() {
-        if (player != null){
-            player.setRate(0.0);
-            player.pause();
-            player.setRate(1.0);
+        if (mediaPlayer != null) {
+            mediaPlayer.controls().pause();
         }
     }
 
-    public void stop() {
-        if (player != null) player.stop();
-    }
-
     public boolean isPlaying() {
-        return player != null && player.getStatus() == MediaPlayer.Status.PLAYING;
-    }
-
-    public boolean inProgress(){
-        return player != null && player.getBufferProgressTime() != javafx.util.Duration.millis(0);
-    }
-
-    public void resetTrack(){
-        player.setRate(0.0);
-        player.seek(javafx.util.Duration.millis(0));
-        player.setRate(1.0);
-    }
-
-    public MediaPlayer getPlayer() {
-        return player;
+        return mediaPlayer != null && mediaPlayer.status().isPlaying();
     }
 
     public void addTrackChangeListener(Consumer<Track> listener) {
@@ -122,16 +168,39 @@ public class MediaService {
         }
     }
 
+    public void dispose() {
+        if (mediaPlayer != null) {
+            mediaPlayer.controls().stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+        if (mediaPlayerFactory != null) {
+            mediaPlayerFactory.release();
+        }
+    }
+
+    public void setCurrentVolume(int currentVolume) {
+        if (mediaPlayer != null) {
+            mediaPlayer.audio().setVolume(currentVolume);
+        }
+    }
+
     private void notifyTrackChangeListeners(Track track) {
         for (Consumer<Track> listener : trackChangeListeners) {
             listener.accept(track);
         }
     }
 
-    public void dispose() {
-        if (player != null) {
-            player.dispose();
-            player = null;
-        }
+    public boolean isMuted(){
+        return mediaPlayer.audio().isMute();
     }
+
+    public void mute() {
+        mediaPlayer.audio().setMute(true);
+    }
+
+    public void unmute() {
+        mediaPlayer.audio().setMute(false);
+    }
+
 }

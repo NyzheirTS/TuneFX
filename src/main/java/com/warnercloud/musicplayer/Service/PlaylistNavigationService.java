@@ -54,7 +54,6 @@ public class PlaylistNavigationService {
         return null;
     }
 
-    // Add a single track (e.g., queued manually)
     public void addTrack(Track track) {
         playlists.add(track);
     }
@@ -89,23 +88,19 @@ public class PlaylistNavigationService {
         setTracks(playbackQueue);*/
     }
 
-    // Clear all tracks
     public void clear() {
         playlists.clear();
         resetCursor();
     }
 
-    // Reset current index
     public void resetCursor() {
         currentIndex = -1;
     }
 
-    // Get all tracks (unmodifiable)
     public List<Track> getAllTracks() {
         return Collections.unmodifiableList(playlists);
     }
 
-    // Get the currently selected/playing track
     public Track getCurrentTrack() {
         if (currentIndex >= 0 && currentIndex < playlists.size()) {
             return playlists.get(currentIndex);

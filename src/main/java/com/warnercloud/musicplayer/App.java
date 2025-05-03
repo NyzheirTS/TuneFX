@@ -1,11 +1,12 @@
 package com.warnercloud.musicplayer;
 
+import com.warnercloud.musicplayer.Service.MediaService;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
+import java.io.File;
 import java.io.IOException;
 
 public class App extends Application {
@@ -17,11 +18,12 @@ public class App extends Application {
         stage.setScene(scene);
         stage.setMinHeight(650);
         stage.setMinWidth(1000);
+        stage.setOnCloseRequest(event -> MediaService.getInstance().dispose());
         stage.show();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         launch();
-
     }
+
 }

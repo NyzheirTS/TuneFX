@@ -8,6 +8,8 @@ module com.warnercloud.musicplayer {
     requires eu.hansolo.tilesfx;
     requires javafx.media;
     requires mp3agic;
+    requires uk.co.caprica.vlcj;
+    requires uk.co.caprica.vlcj.natives;
 
     opens com.warnercloud.musicplayer to javafx.fxml;
     exports com.warnercloud.musicplayer;

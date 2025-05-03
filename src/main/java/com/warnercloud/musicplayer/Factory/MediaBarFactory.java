@@ -15,6 +15,7 @@ public class MediaBarFactory {
             HBox root = loader.load();
 
             MediaBarController controller = loader.getController();
+            controller.initUI();
             root.getProperties().put("controller", controller);
             return root;
         } catch (IOException e){

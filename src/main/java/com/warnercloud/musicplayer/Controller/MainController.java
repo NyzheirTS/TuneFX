@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.function.Consumer;
 
 
 public class MainController implements Initializable {
@@ -37,13 +36,13 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         // Initialize FileChooser for loading music
-        /*chooser.setTitle("Select your music");
+        chooser.setTitle("Select your music");
         chooser.setInitialDirectory(new File("C:/Users/eshas/OneDrive/Desktop/Kpop/Playlist/"));
         File file = chooser.showOpenDialog(null);
 
         if (file != null) {
-            loadTrack(file);
-        }*/
+            //loadTrack(file);
+        }
         getPlaylists(playlistFile, () -> loadFirstTrack(PlaylistNavigationService.getInstance().playNext().getFilePath()));
         initUI();
     }
@@ -58,7 +57,6 @@ public class MainController implements Initializable {
 
     // Called when the metadata is ready
     private void onMetadataReady(Track track) {
-        // Update the UI based on track's metadata
 
     }
 

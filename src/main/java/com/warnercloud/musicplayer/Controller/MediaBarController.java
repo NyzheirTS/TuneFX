@@ -4,6 +4,9 @@ import com.warnercloud.musicplayer.Model.Track;
 import com.warnercloud.musicplayer.Service.MediaService;
 import com.warnercloud.musicplayer.Service.PlaylistNavigationService;
 import com.warnercloud.musicplayer.Utils.TimeUtils;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.Observable;
 import javafx.beans.value.ObservableValue;
@@ -15,8 +18,6 @@ import javafx.scene.control.Slider;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.media.Media;
-import javafx.stage.FileChooser;
 import javafx.util.Duration;
 
 import java.io.File;
@@ -43,73 +44,140 @@ public class MediaBarController {
     @FXML public Button volumeButton;
     @FXML public Slider volumeSlider;
 
-    private Track track;
-    private final FileChooser chooser = new FileChooser();
-    private boolean updatingValue;
     private boolean wasPlaying;
-
+    private boolean updatingValue;
+    private boolean isSeeking = false;
+    private Timeline timeline;
+    private long lastSeekTime = 0;
+    private long lastVolumeTime = 0;// For throttling seeks
+    private double lastVolume = 0;
+    private long volume = 100;
 
     public MediaBarController() {
         MediaService.getInstance().addTrackChangeListener(this::updateTrack);
     }
 
+    public void initUI(){
+        initSeekBar();
+        initVolumeControls();
+    }
+
     private void updateTrack(Track track) {
-        this.track = track;
         Platform.runLater(() -> {
-           albumCover.setImage(track.getCover());
-           artistLabel.setText(track.getArtist());
-           songLabel.setText(track.getTitle());
-           durationLabel.setText(TimeUtils.formatDuration(track.getDuration()));
-           initSeekBar();
+            albumCover.setImage(track.getCover());
+            artistLabel.setText(track.getArtist());
+            songLabel.setText(track.getTitle());
+            durationLabel.setText(TimeUtils.formatDuration(track.getDuration()));
+            // Start playback immediately
+            MediaService.getInstance().play();
+            // Start polling for progress updates if playback has started
+            startPlaybackPolling();
         });
     }
 
-    private void initSeekBar(){
+    private void initSeekBar() {
         seekBar.setMin(0.0);
         seekBar.setMax(1.0);
         seekBar.setValue(0.0);
-        seekBar.valueProperty().addListener(this::onValueInvalidated);
-        seekBar.valueChangingProperty().addListener(this::onValueChangingChange);
-        MediaService.getInstance().getPlayer().currentTimeProperty().addListener(this::onCurrentTimeChanges);
+        seekBar.valueProperty().addListener(this::seekBaronValueInvalidated);
+        seekBar.valueChangingProperty().addListener(this::seekBaronValueChangingChange);
     }
 
-    private void onValueInvalidated(Observable observable) {
+
+
+    private void initVolumeControls() {
+        volumeSlider.setMin(0.00);
+        volumeSlider.setMax(100.00);
+        volumeSlider.setValue(volume);
+        volumeSliderValueProperty();
+        volumeSliderSetOnScroll();
+
+    }
+
+    private void volumeSliderValueProperty() {
+        volumeSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastSeekTime < 200) {
+                return;
+            }
+            lastVolumeTime = currentTime;
+            volume = newValue.intValue();
+            MediaService.getInstance().setCurrentVolume(newValue.intValue());
+        });
+    }
+
+    private void volumeSliderSetOnScroll(){
+        volumeSlider.setOnScroll(scrollEvent -> {
+            volume -= (long) (scrollEvent.getDeltaY() * -0.25 );
+            volume = Math.round(volume / 10.0) * 10;
+            volume = Math.max(0, Math.min(100, volume));
+
+            System.out.println("volume " + volume);
+
+            MediaService.getInstance().setCurrentVolume((int) volume);
+            Platform.runLater(() -> volumeSlider.setValue(volume));
+
+
+            scrollEvent.consume();
+        });
+    }
+
+    private void seekBaronValueInvalidated(Observable obs){
         if (!updatingValue){
-            double ms = MediaService.getInstance().getPlayer().getMedia().getDuration().toMillis() * seekBar.getValue();
-            MediaService.getInstance().getPlayer().seek(Duration.millis(ms));
+            MediaService media = MediaService.getInstance();
+            double ms = media.getMediaDuration() * seekBar.getValue();
+            media.seek((long) ms);
         }
     }
 
-    private void onValueChangingChange(ObservableValue<? extends Boolean> observable, Boolean wasValueChanging, Boolean isValueChanging) {
-        if (Boolean.TRUE.equals(isValueChanging)){
-            if (MediaService.getInstance().isPlaying()){
+    private void seekBaronValueChangingChange(ObservableValue<? extends Boolean> obs, Boolean oldValue, Boolean newValue) {
+        if (Boolean.TRUE.equals(newValue)) {
+            if (MediaService.getInstance().isPlaying()) {
                 wasPlaying = true;
-                MediaService.getInstance().getPlayer().pause();
+                MediaService.getInstance().pause();
             } else {
                 wasPlaying = false;
             }
         } else if (wasPlaying) {
-            MediaService.getInstance().getPlayer().play();
+            MediaService.getInstance().play();
         }
     }
 
-    private void onCurrentTimeChanges(ObservableValue<? extends Duration> observable, Duration oldValue, Duration newValue) {
-        if (!seekBar.isValueChanging()){
-            updatingValue = true;
-            try {
-                double value = newValue.toMillis() / MediaService.getInstance().getPlayer().getMedia().getDuration().toMillis();
-                Platform.runLater(() -> {
-                   runtimeLabel.setText(TimeUtils.formatDuration(Duration.millis(newValue.toMillis())));
-                });
-                seekBar.setValue(value);
-            } finally{
-                updatingValue = false;
-            }
+    private void startPlaybackPolling() {
+        if (timeline != null) {
+            timeline.stop();
         }
+
+        timeline = new Timeline(new KeyFrame(Duration.millis(250), event -> {
+            if (!seekBar.isValueChanging()) {//&& MediaService.getInstance().isPlaying()) {
+                updatingValue = true;
+                long currentTime = MediaService.getInstance().getCurrentTime();
+                long totalDuration = MediaService.getInstance().getMediaDuration();
+                try {
+                    double progress = (double) currentTime / totalDuration;
+                    seekBar.setValue(progress);
+                    runtimeLabel.setText(TimeUtils.formatDuration(Duration.millis(currentTime)));
+                } finally {
+                    updatingValue = false;
+                }
+            }
+        }));
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.play();
     }
+
 
     @FXML
-    public void shufflePlaylistFunction(ActionEvent event) {}
+    public void shufflePlaylistFunction(ActionEvent event) { /* TODO document why this method is empty */ }
+
+    @FXML
+    public void pausePlayFunction(ActionEvent event) {
+        if (MediaService.getInstance().isPlaying()) {
+            MediaService.getInstance().pause();
+        } else {
+            MediaService.getInstance().play();
+        }
+    }
 
     @FXML
     public void resetGoBackFunction(ActionEvent event) {
@@ -122,16 +190,7 @@ public class MediaBarController {
     }
 
     @FXML
-    public void pausePlayFunction(ActionEvent event){
-        if (MediaService.getInstance().isPlaying()) {
-            MediaService.getInstance().pause();
-        } else {
-            MediaService.getInstance().play();
-        }
-    }
-
-    @FXML
-    public void skipTrackFunction(ActionEvent event){
+    public void skipTrackFunction(ActionEvent event) {
         if (PlaylistNavigationService.getInstance().peekNext() != null) {
             Track nextTrack = PlaylistNavigationService.getInstance().playNext();
             loadTrack(nextTrack.getFilePath());
@@ -141,28 +200,32 @@ public class MediaBarController {
     }
 
     @FXML
-    public void repeatTracksFunction(ActionEvent event){
-        //filler to change song testing
-        chooser.setTitle("Select your music");
-        chooser.setInitialDirectory(new File("C:/Users/eshas/OneDrive/Desktop/Kpop/Playlist/"));
-        File file = chooser.showOpenDialog(null);
+    public void repeatTracksFunction(ActionEvent event) {
+        MediaService.getInstance().setRepeat(!MediaService.getInstance().repeatEnabled());
+        System.out.println(MediaService.getInstance().repeatEnabled());
 
-        if (file != null) {
-            loadTrack(file);
-            //PlaylistNavigationService.getInstance().startPlaybackFrom();
-        }
     }
 
     private void loadTrack(File file) {
-        // Create Track object to hold the track information
-        Track currentTrack = new Track(file);
         // MediaService used to load and prepare the track
-        MediaService.getInstance().loadTrack(currentTrack, this::updateTrack);
-        MediaService.getInstance().play();
+        Track track = new Track(file);
+        MediaService.getInstance().loadTrack(track, updateTrack -> {
+            updateTrack(updateTrack);
+            Platform.runLater(this::startPlaybackPolling);
+        });
+
     }
 
 
     @FXML
     public void muteRestoreFunction(ActionEvent actionEvent) {
+        if (!MediaService.getInstance().isMuted()) {
+            lastVolume = volumeSlider.getValue();
+            MediaService.getInstance().mute();
+            Platform.runLater(() -> volumeSlider.setValue(0));
+        } else {
+            MediaService.getInstance().unmute();
+            Platform.runLater(() -> volumeSlider.setValue(lastVolume));
+        }
     }
 }
