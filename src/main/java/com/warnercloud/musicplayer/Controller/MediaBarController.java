@@ -183,7 +183,7 @@ public class MediaBarController {
     public void resetGoBackFunction(ActionEvent event) {
         if (PlaylistNavigationService.getInstance().peekPrevious() != null) {
             Track previousTrack = PlaylistNavigationService.getInstance().playPrevious();
-            loadTrack(previousTrack.getFilePath());
+            loadTrack(previousTrack);
         } else {
             System.out.println("No Previous Track");
         }
@@ -193,7 +193,7 @@ public class MediaBarController {
     public void skipTrackFunction(ActionEvent event) {
         if (PlaylistNavigationService.getInstance().peekNext() != null) {
             Track nextTrack = PlaylistNavigationService.getInstance().playNext();
-            loadTrack(nextTrack.getFilePath());
+            loadTrack(nextTrack);
         } else {
             System.out.println("No Next Track");
         }
@@ -206,14 +206,11 @@ public class MediaBarController {
 
     }
 
-    private void loadTrack(File file) {
+    private void loadTrack(Track track) {
         // MediaService used to load and prepare the track
-        Track track = new Track(file);
-        MediaService.getInstance().loadTrack(track, updateTrack -> {
-            updateTrack(updateTrack);
-            Platform.runLater(this::startPlaybackPolling);
-        });
-
+        MediaService.getInstance().loadTrack(track);
+        updateTrack(track);
+        Platform.runLater(this::startPlaybackPolling);
     }
 
 

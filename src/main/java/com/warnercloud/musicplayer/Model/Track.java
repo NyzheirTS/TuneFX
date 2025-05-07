@@ -4,10 +4,8 @@ import javafx.scene.image.Image;
 
 import javafx.util.Duration;
 
-import java.io.File;
-
 public class Track {
-    private Integer index;
+    private String ID;
     private String title;
     private String artist;
     private String album;
@@ -20,14 +18,15 @@ public class Track {
     private Integer discCount;
     private Duration duration;
     private Image cover;
-    private final File filePath;
+    private final String filePath;
+    private Integer playCount = 0;
 
-    public Track(File filePath, int index) {
+    public Track(String filePath, String index) {
         this.filePath = filePath;
-        this.index = index;
+        this.ID = index;
     }
 
-    public Track(File filePath) {
+    public Track(String filePath) {
         this.filePath = filePath;
     }
 
@@ -69,15 +68,18 @@ public class Track {
     public Image getCover() { return cover; }
     public void setCover(Image cover) { this.cover = cover; }
 
-    public File getFilePath() { return filePath; }
+    public String getFilePath() { return filePath; }
 
-    public Integer getIndex() {
-        return index;
+    public String getIndex() {
+        return ID;
     }
 
-    public void setIndex(Integer index) {
-        this.index = index;
+    public void setIndex(String index) {
+        this.ID = index;
     }
+
+    public void incrementPlayCount() {playCount++;}
+    public Integer getPlayCount() { return playCount; }
 
     // Optional toString() for debugging
     @Override

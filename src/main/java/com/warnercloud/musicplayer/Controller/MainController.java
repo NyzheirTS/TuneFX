@@ -5,7 +5,9 @@ import com.warnercloud.musicplayer.Factory.MediaBarFactory;
 import com.warnercloud.musicplayer.Factory.SideBarFactory;
 import com.warnercloud.musicplayer.Model.Track;
 import com.warnercloud.musicplayer.Service.MediaService;
+import com.warnercloud.musicplayer.Service.MetaDataService;
 import com.warnercloud.musicplayer.Service.PlaylistNavigationService;
+import com.warnercloud.musicplayer.Utils.AppJsonManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -32,6 +34,8 @@ public class MainController implements Initializable {
     private final VBox sideBar = SideBarFactory.createSideBar();
     private final BorderPane centerView = CenterViewFactory.createMediaBar();
 
+    private final AppJsonManager appJsonManager = new AppJsonManager();
+
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -43,15 +47,13 @@ public class MainController implements Initializable {
         if (file != null) {
             //loadTrack(file);
         }
-        getPlaylists(playlistFile, () -> loadFirstTrack(PlaylistNavigationService.getInstance().playNext().getFilePath()));
+        getPlaylists(playlistFile, () -> loadFirstTrack(PlaylistNavigationService.getInstance().playNext()));
         initUI();
     }
 
-    private void loadFirstTrack(File file) {
-        // Create Track object to hold the track information
-        Track currentTrack = new Track(file, 0);
+    private void loadFirstTrack(Track track) {
         // MediaService used to load and prepare the track
-        MediaService.getInstance().loadTrack(currentTrack, this::onMetadataReady);
+        MediaService.getInstance().loadTrack(track);
         MediaService.getInstance().play();
     }
 
@@ -69,18 +71,26 @@ public class MainController implements Initializable {
     }
 
     private void getPlaylists(File playlistFile, Runnable callback) {
-        List<Track> trackList = new ArrayList<>();
-        int index = -1;
-        for (final File fileEntry : Objects.requireNonNull(playlistFile.listFiles())) {
-            if (fileEntry.isDirectory()) {
-                getPlaylists(fileEntry, () -> {});
-            } else {
-                trackList.add(new Track(fileEntry, index++));
+        // Sync json manager with files in user music directory
+        appJsonManager.syncWithDirectory(playlistFile);
+        // Load entries from the JSON file after done syncing files
+        List<AppJsonManager.MasterCRUD> entries = appJsonManager.getAllEntries();
+        // Build Track objects from synced entries to be sent to playlist manager
+        List<Track> tracks = new ArrayList<>();
+        for (int i = 0; i < entries.size(); i++) {
+            File file = new File(entries.get(i).getFilePath());
+            if (file.exists()) {
+                tracks.add(new Track(file.getPath(), entries.get(i).getUuid()));
             }
         }
-        PlaylistNavigationService.getInstance().setTracks(trackList);
-        PlaylistNavigationService.getInstance().getAllTracks().forEach(track -> {System.out.println("Path: " + track.getFilePath() + ", Index: " + track.getIndex());});
+        // Extract metadata and update playlist service
+        MetaDataService service = new MetaDataService();
+        service.extractBasicMetadataAsync(tracks);
+        PlaylistNavigationService.getInstance().setTracks(tracks);
+        // Debug
+        //PlaylistNavigationService.getInstance().getAllTracks().forEach(track -> System.out.println("Path: " + track.getFilePath() + ", UUID: " + track.getIndex()));
         callback.run();
+        service.shutdown();
     }
 
 }
