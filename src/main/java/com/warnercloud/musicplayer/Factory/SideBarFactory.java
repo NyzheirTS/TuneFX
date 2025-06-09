@@ -17,6 +17,7 @@ public class SideBarFactory {
 
             SideBarController controller = loader.getController();
             root.getProperties().put("controller", controller);
+            controller.initSideBar();
             return root;
         } catch (IOException e){
             e.printStackTrace();

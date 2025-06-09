@@ -15,12 +15,13 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-import java.io.File;
+import javax.print.attribute.standard.Media;
 
 public class MediaBarController {
     @FXML public HBox parentContainer;
@@ -64,7 +65,7 @@ public class MediaBarController {
 
     private void updateTrack(Track track) {
         Platform.runLater(() -> {
-            albumCover.setImage(track.getCover());
+            albumCover.setImage(new Image(track.getCover(), 93, 93, true, true, true));
             artistLabel.setText(track.getArtist());
             songLabel.setText(track.getTitle());
             durationLabel.setText(TimeUtils.formatDuration(track.getDuration()));
@@ -168,7 +169,11 @@ public class MediaBarController {
 
 
     @FXML
-    public void shufflePlaylistFunction(ActionEvent event) { /* TODO document why this method is empty */ }
+    public void shufflePlaylistFunction(ActionEvent event) {
+
+        /* TODO document why this method is empty */
+        System.out.println(MediaService.getInstance().getCurrentTrack().toString());
+    }
 
     @FXML
     public void pausePlayFunction(ActionEvent event) {

@@ -17,6 +17,7 @@ public class CenterViewFactory {
             BorderPane root = loader.load();
 
             CenterViewController controller = loader.getController();
+            controller.initContainer();
             root.getProperties().put("controller", controller);
             return root;
         } catch (IOException e){

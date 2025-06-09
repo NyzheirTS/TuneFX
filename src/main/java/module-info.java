@@ -12,6 +12,7 @@ module com.warnercloud.musicplayer {
     requires uk.co.caprica.vlcj.natives;
     requires javafx.swing;
     requires com.fasterxml.jackson.databind;
+    requires org.fxmisc.flowless;
 
     opens com.warnercloud.musicplayer to javafx.fxml;
     exports com.warnercloud.musicplayer;
@@ -19,4 +20,6 @@ module com.warnercloud.musicplayer {
     opens com.warnercloud.musicplayer.Controller to javafx.fxml;
     opens com.warnercloud.musicplayer.Utils to com.fasterxml.jackson.databind;
     exports com.warnercloud.musicplayer.Utils;
+    opens com.warnercloud.musicplayer.Model to com.fasterxml.jackson.databind, javafx.fxml;
+    exports com.warnercloud.musicplayer.Model;
 }

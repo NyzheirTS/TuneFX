@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<HBox fx:id="parent" alignment="CENTER" prefHeight="56.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.ListItemController">
+   <children>
+      <StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="48.0" prefWidth="48.0">
+         <HBox.margin>
+            <Insets />
+         </HBox.margin>
+         <children>
+            <ImageView fx:id="coverArtImg" fitHeight="48.0" fitWidth="48.0" pickOnBounds="true" preserveRatio="true" />
+            <Button fx:id="playButton" mnemonicParsing="false" onAction="#startPlayback" style="-fx-background-color: transparent;" visible="false">
+               <graphic>
+                  <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Play.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
+         </children>
+      </StackPane>
+      <HBox minWidth="-Infinity" prefWidth="37.0" HBox.hgrow="ALWAYS" />
+      <VBox alignment="CENTER">
+         <children>
+            <Label fx:id="songTitle" prefWidth="235.0" text="Label" textFill="WHITE">
+               <font>
+                  <Font size="24.0" />
+               </font>
+            </Label>
+            <Label fx:id="artistLabel" prefWidth="234.0" text="Label" textFill="#8d8c8c" />
+         </children>
+      </VBox>
+      <HBox HBox.hgrow="ALWAYS" />
+      <Label fx:id="albumLabel" alignment="CENTER" prefWidth="208.0" text="Label" textFill="WHITE">
+         <font>
+            <Font size="21.0" />
+         </font>
+      </Label>
+      <HBox HBox.hgrow="ALWAYS" />
+      <Label fx:id="dateLabel" alignment="CENTER" prefWidth="252.0" text="Label" textFill="WHITE">
+         <font>
+            <Font size="21.0" />
+         </font>
+      </Label>
+      <HBox HBox.hgrow="ALWAYS" />
+      <Label fx:id="countLabel" alignment="CENTER" prefWidth="126.0" text="Label" textFill="WHITE">
+         <font>
+            <Font size="21.0" />
+         </font>
+      </Label>
+      <HBox HBox.hgrow="ALWAYS" />
+      <Label fx:id="durationLabel" alignment="CENTER" prefWidth="114.0" text="Label" textFill="WHITE">
+         <font>
+            <Font size="21.0" />
+         </font>
+         <HBox.margin>
+            <Insets />
+         </HBox.margin>
+      </Label>
+   </children>
+   <padding>
+      <Insets left="3.0" right="12.0" />
+   </padding>
+</HBox>

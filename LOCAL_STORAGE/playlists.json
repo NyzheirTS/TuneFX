@@ -1,0 +1,10 @@
+[
+    {
+        "uuid":"uuid",
+        "playlist_name": "playlist_1",
+        "date_created": "date",
+        "song_uuids" : [
+            "uuid1", "uuid2", "uuid3"
+        ]
+    }
+]

@@ -1,6 +1,7 @@
 package com.warnercloud.musicplayer.Service;
 
 import com.warnercloud.musicplayer.Model.Track;
+import com.warnercloud.musicplayer.Utils.MasterJsonManager;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
@@ -8,7 +9,6 @@ import uk.co.caprica.vlcj.player.base.MediaPlayerEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -26,11 +26,27 @@ public class MediaService {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> playCountTask;
     private boolean playCounted = false;
+    private final MasterJsonManager masterJsonManager = new MasterJsonManager();
 
 
     private MediaService() {
         mediaPlayerFactory = new MediaPlayerFactory();
         mediaPlayer = mediaPlayerFactory.mediaPlayers().newMediaPlayer();
+        MediaPlayerEventListener mediaPlayerEventListener = new MediaPlayerEventAdapter() {
+            @Override
+            public void finished(final MediaPlayer mediaPlayer) {
+                Track nextTrack = PlaylistNavigationService.getInstance().playNext();
+                if (nextTrack != null && !mediaPlayer.controls().getRepeat()) {
+                    mediaPlayer.submit(() -> loadTrack(nextTrack));
+                }
+            }
+
+            @Override
+            public void playing(final MediaPlayer mediaPlayer) {
+                onTrackStarted();
+            }
+
+        };
         mediaPlayer.events().addMediaPlayerEventListener(mediaPlayerEventListener);
     }
 
@@ -39,6 +55,10 @@ public class MediaService {
             instance = new MediaService();
         }
         return instance;
+    }
+
+    public Track getCurrentTrack() {
+        return currentTrack;
     }
 
     public void loadTrack(Track track) {
@@ -153,45 +173,30 @@ public class MediaService {
     }
 
 
-    private final MediaPlayerEventListener mediaPlayerEventListener = new MediaPlayerEventAdapter() {
-        @Override
-        public void finished(final MediaPlayer mediaPlayer) {
-            Track nextTrack = PlaylistNavigationService.getInstance().playNext();
-            if (nextTrack != null && !mediaPlayer.controls().getRepeat()) {
-                mediaPlayer.submit(() -> loadTrack(nextTrack));
-            }
+    private void onTrackStarted(){
+        //System.out.println("Playback confirmed started.");
+
+        if (currentTrack == null || playCounted) return;
+
+        // Cancel existing scheduled task
+        if (playCountTask != null && !playCountTask.isDone()) {
+            playCountTask.cancel(true);
         }
 
-        @Override
-        public void playing(final MediaPlayer mediaPlayer) {
-            onTrackStarted();
-        }
-
-
-        private void onTrackStarted(){
-            //System.out.println("Playback confirmed started.");
-
-            if (currentTrack == null || playCounted) return;
-
-            // Cancel existing scheduled task
-            if (playCountTask != null && !playCountTask.isDone()) {
-                playCountTask.cancel(true);
-            }
-
-            // Schedule task to increment play count after 50 seconds
-            playCountTask = scheduler.schedule(() -> {
-                try {
-                    if (mediaPlayer.status().isPlaying()) {
-                        currentTrack.incrementPlayCount();
-                        playCounted = true;
-                        System.out.println("Play Counted: " + currentTrack.getTitle() + " Count: " + currentTrack.getPlayCount());
-                    } else {
-                        System.out.println("Track was not playing at 50s mark.");
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+        // Schedule task to increment play count after 50 seconds
+        playCountTask = scheduler.schedule(() -> {
+            try {
+                if (mediaPlayer.status().isPlaying()) {
+                    currentTrack.incrementPlayCount();
+                    masterJsonManager.updatePlaycount(currentTrack.getUUID(), 1);
+                    playCounted = true;
+                    System.out.println("Play Counted: " + currentTrack.getTitle() + " Count: " + currentTrack.getPlayCount());
+                } else {
+                    System.out.println("Track was not playing at 50s mark.");
                 }
-            }, 50, TimeUnit.SECONDS);
-        }
-    };
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 50, TimeUnit.SECONDS);
+    }
 }

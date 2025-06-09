@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.text.Font?>
+
+<HBox fx:id="parent" alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="28.0" prefWidth="159.0" spacing="6.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.PlaylistListItemController">
+   <children>
+      <StackPane HBox.hgrow="ALWAYS">
+         <children>
+            <HBox fx:id="imageTitleContainer" alignment="CENTER_LEFT" spacing="6.0" visible="false">
+               <children>
+                  <ImageView fx:id="playlistIcon" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true">
+                     <image>
+                        <Image url="@../../../../../../../../../Users/eshas/OneDrive/Pictures/Screenshot%202023-04-16%20192235.png" />
+                     </image>
+                  </ImageView>
+                  <Label fx:id="labelWithIcon" text="Label" textFill="WHITE" HBox.hgrow="ALWAYS">
+                     <font>
+                        <Font size="16.0" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
+            <HBox fx:id="labelOnlyContainer" alignment="CENTER_LEFT">
+               <children>
+                  <Label fx:id="labelOnly" text="Label" textFill="WHITE">
+                     <font>
+                        <Font size="16.0" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
+         </children>
+      </StackPane>
+      <HBox HBox.hgrow="ALWAYS" />
+      <ImageView fx:id="pinIcon" fitHeight="16.0" fitWidth="16.0" pickOnBounds="true">
+         <image>
+            <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Pin.png" />
+         </image>
+      </ImageView>
+   </children>
+   <padding>
+      <Insets left="2.0" right="2.0" />
+   </padding>
+</HBox>

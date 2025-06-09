@@ -3,14 +3,19 @@ package com.warnercloud.musicplayer.Service;
 import com.warnercloud.musicplayer.Model.Track;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class PlaylistNavigationService {
     private static PlaylistNavigationService instance;
 
-    private  List<Track> playlists = new ArrayList<>();
-    private  List<Track> playbackQueue = new ArrayList<>();
-    private int currentIndex = -1; // -1 means no track is selected yet
-    private int queueIndex = 0;
+    private final List<Track> allTracks = new ArrayList<>();     //list of available songs
+    private final List<Track> playbackQueue = new ArrayList<>(); // playback queue
+    private final List<Track> filteredTracks = new ArrayList<>();
+    private final List<Consumer<List<Track>>> allTrackListeners = new ArrayList<>();
+    private final List<Consumer<List<Track>>> queueListeners = new ArrayList<>();
+
+    private String currentTrackUUID = null;
+
     private PlaylistNavigationService() {}
 
     public static PlaylistNavigationService getInstance() {
@@ -20,93 +25,161 @@ public class PlaylistNavigationService {
         return instance;
     }
 
-    // Move to next track and return it
-    public Track playNext() {
-        if (currentIndex + 1 < playlists.size()) {
-            currentIndex++;
-            return playlists.get(currentIndex);
-        }
-        return null;
+    // Load all tracks from selected playlist
+    public void loadPlaylist(List<Track> tracks) {
+        allTracks.clear();
+        allTracks.addAll(tracks);
+
+        filteredTracks.clear();
+        filteredTracks.addAll(allTracks);
+
+        //resetCursor();
+        notifyTrackConsumers();
     }
 
-    // Move to previous track and return it
-    public Track playPrevious() {
-        if (currentIndex - 1 >= 0) {
-            currentIndex--;
-            return playlists.get(currentIndex);
-        }
-        return null;
-    }
-
-    // Peek at the next track without moving the cursor
-    public Track peekNext() {
-        if (currentIndex + 1 < playlists.size()) {
-            return playlists.get(currentIndex + 1);
-        }
-        return null;
-    }
-
-    // Peek at the previous track without moving the cursor
-    public Track peekPrevious() {
-        if (currentIndex - 1 >= 0) {
-            return playlists.get(currentIndex - 1);
-        }
-        return null;
-    }
-
-    public void addTrack(Track track) {
-        playlists.add(track);
-    }
-
-    // Replace the entire playlist
-    public void setTracks(List<Track> tracks) {
-        playlists.clear();
-        playlists.addAll(tracks);
+    // Set active playback queue
+    public void setPlaybackQueue(List<Track> tracks) {
+        playbackQueue.clear();
+        playbackQueue.addAll(tracks);
         resetCursor();
-    }
-
-    public void addTrackAfterCurrent(Track track) {
-        if (currentIndex >= 0 && currentIndex < playlists.size()) {
-            // Insert the track right after the current track
-            playlists.add(currentIndex + 1, track);
-            currentIndex++;  // Update currentIndex to the new track's position
-        } else {
-            // If no track is playing, add it to the end
-            playlists.add(track);
-            currentIndex = playlists.size() - 1; // Make it the current track
-        }
+        notifyQueueConsumers();
     }
 
     public void startPlaybackFrom(Track clickedTrack) {
-        /*int startIndex = clickedTrack.getIndex(); //TODO: Add index to json so can start que from specific point also need to add songes before index to end of que if mix is on
-        System.out.println("Starting playback from " + clickedTrack.getIndex());
+        if(clickedTrack.getUUID().equals(currentTrackUUID)){
+            return;
+        }
+        int startIndex = indexOfInFilteredTracks(clickedTrack);
         if (startIndex == -1) return;
 
-        playbackQueue.clear();
-        playbackQueue.addAll(playlists.subList(startIndex, playlists.size()));
-        queueIndex = 0;
-        setTracks(playbackQueue);*/
+        List<Track> newQueue = new ArrayList<>(filteredTracks.subList(startIndex, filteredTracks.size()));
+        setPlaybackQueue(newQueue);
+        currentTrackUUID = clickedTrack.getUUID();
+        MediaService.getInstance().loadTrack(clickedTrack);
     }
 
-    public void clear() {
-        playlists.clear();
-        resetCursor();
+    private int indexOfInFilteredTracks(Track track) {
+        for (int i = 0; i < filteredTracks.size(); i++) {
+            if (filteredTracks.get(i).getUUID().equals(track.getUUID())) {
+                return i;
+            }
+        }
+        return -1;
     }
 
-    public void resetCursor() {
-        currentIndex = -1;
-    }
 
-    public List<Track> getAllTracks() {
-        return Collections.unmodifiableList(playlists);
-    }
-
-    public Track getCurrentTrack() {
-        if (currentIndex >= 0 && currentIndex < playlists.size()) {
-            return playlists.get(currentIndex);
+    public Track playNext() {
+        int index = getCurrentIndexInQueue();
+        if (index != -1 && index + 1 < playbackQueue.size()) {
+            Track nextTrack = playbackQueue.get(index + 1);
+            currentTrackUUID = nextTrack.getUUID();
+            System.out.println("Next track: " + nextTrack.getTitle() + " - Position " + (index + 1) +"/" + playbackQueue.size());
+            return nextTrack;
         }
         return null;
     }
+
+    public Track playPrevious() {
+        int index = getCurrentIndexInQueue();
+        if (index > 0) {
+            Track prevTrack = playbackQueue.get(index - 1);
+            currentTrackUUID = prevTrack.getUUID();
+            return prevTrack;
+        }
+        return null;
+    }
+
+    public Track peekNext() {
+        int index = getCurrentIndexInQueue();
+        if (index + 1 < playbackQueue.size()) {
+            return playbackQueue.get(index + 1);
+        }
+        return null;
+    }
+
+    public Track peekPrevious() {
+        int index = getCurrentIndexInQueue();
+        if (index - 1 >= 0) {
+            return playbackQueue.get(index - 1);
+        }
+        return null;
+    }
+
+    public Track getCurrentTrack() {
+        if (currentTrackUUID == null) return null;
+        return playbackQueue.stream()
+                .filter(t -> t.getUUID().equals(currentTrackUUID))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private int getCurrentIndexInQueue() {
+        if (currentTrackUUID == null) return -1;
+        for (int i = 0; i < playbackQueue.size(); i++) {
+            if (playbackQueue.get(i).getUUID().equals(currentTrackUUID)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    public void filterTracks(Set<String> playlistUUIDs){
+        filteredTracks.clear();
+        for (Track track : allTracks) {
+            if (playlistUUIDs.contains(track.getUUID())) {
+                filteredTracks.add(track);
+            }
+        }
+        //resetCursor();
+        notifyTrackConsumers();
+    }
+
+
+    public void addTrackToQueue(Track track) {
+        int index = getCurrentIndexInQueue();
+        if (index != -1) {
+            playbackQueue.add(index + 1, track);
+        } else {
+            playbackQueue.add(track);
+        }
+        currentTrackUUID = track.getUUID();
+    }
+
+    public void resetCursor() {
+        currentTrackUUID = null;
+    }
+
+    public void clearPlaybackQueue() {
+        playbackQueue.clear();
+        resetCursor();
+    }
+
+    public List<Track> getAllTracks() {
+        return allTracks;
+    }
+
+    public List<Track> getPlaybackQueue() {
+        return playbackQueue;
+    }
+
+    private void notifyTrackConsumers() {
+        for (Consumer<List<Track>> consumer : allTrackListeners) {
+            consumer.accept(new ArrayList<>(filteredTracks));
+        }
+    }
+
+    private void notifyQueueConsumers() {
+        for (Consumer<List<Track>> consumer : queueListeners) {
+            consumer.accept(new ArrayList<>(playbackQueue));
+        }
+    }
+
+    public void addListFullListener(Consumer<List<Track>> consumer) {
+        allTrackListeners.add(consumer);
+    }
+    public void addQueueFullListener(Consumer<List<Track>> consumer) {allTrackListeners.add(consumer);}
 }
+
 
 
