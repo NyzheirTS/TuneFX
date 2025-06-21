@@ -18,6 +18,11 @@
          </HBox.margin>
          <children>
             <ImageView fx:id="coverArtImg" fitHeight="48.0" fitWidth="48.0" pickOnBounds="true" preserveRatio="true" />
+            <ImageView fx:id="playingGif" fitHeight="48.0" fitWidth="48.0" pickOnBounds="true" preserveRatio="true" visible="false">
+               <image>
+                  <Image url="@../../../../../../../../../Users/eshas/Downloads/2f9def8f.gif" />
+               </image>
+            </ImageView>
             <Button fx:id="playButton" mnemonicParsing="false" onAction="#startPlayback" style="-fx-background-color: transparent;" visible="false">
                <graphic>
                   <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">

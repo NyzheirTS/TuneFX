@@ -1,25 +1,34 @@
 package com.warnercloud.musicplayer.Model;
 
+import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.util.Duration;
 
 public class Track {
-    private String UUID;
+    private final String UUID;
     private String title;
     private String artist;
     private String album;
     private String genre;
     private Duration duration;
     private String coverPath;
+    private String date;
     private final String filePath;
-    private int playCount;
+    private final IntegerProperty playCount = new SimpleIntegerProperty(0);
+    private final BooleanProperty playing = new SimpleBooleanProperty(false);
 
-    public Track(String filePath, String index, int playCount) {
+    public Track(String filePath, String index, int playCount, String date) {
         this.filePath = filePath;
         this.UUID = index;
-        this.playCount = playCount;
+        this.date = date;
+        this.playCount.set(playCount);
     }
 
-    public Track(String filePath) {
+    public Track(String uuid, String filePath) {
+        UUID = uuid;
         this.filePath = filePath;
     }
 
@@ -43,18 +52,24 @@ public class Track {
     public String getCover() { return coverPath; }
     public void setCover(String cover) { this.coverPath = cover; }
 
+    public String getDate() {return date;}
+    public void setDate(String date) {this.date = date;}
+
     public String getFilePath() { return filePath; }
 
     public String getUUID() {
         return UUID;
     }
 
-    public void setIndex(String index) {
-        this.UUID = index;
-    }
 
-    public void incrementPlayCount() {playCount++;}
-    public Integer getPlayCount() { return playCount; }
+
+    public BooleanProperty playingProperty() {return playing;}
+    public boolean isPlaying() {return playing.get();}
+    public void setPlaying(boolean playing) {this.playing.set(playing);}
+
+    public IntegerProperty playCountProperty() {return playCount;}
+    public void incrementPlayCount() {Platform.runLater(() -> playCount.set(playCount.get() + 1));}
+    public int getPlayCount() { return playCount.get(); }
 
     @Override
     public String toString() {

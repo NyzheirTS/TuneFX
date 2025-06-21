@@ -10,10 +10,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-
-<VBox fx:id="parent" alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="230.0" prefWidth="400.0" style="-fx-background-color: rgba(45, 45, 45, 1); -fx-background-radius: 16;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.PlaylistCreationFormController">
+<VBox fx:id="parent" alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" prefWidth="450.0" style="-fx-background-color: rgba(45, 45, 45, 1); -fx-background-radius: 16;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.PlaylistCreationFormController">
    <children>
-      <HBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="230.0" prefWidth="400.0" spacing="33.0" style="-fx-background-radius: 16; -fx-background-color: transparent;">
+      <HBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="230.0" prefWidth="400.0" spacing="65.0" style="-fx-background-radius: 16; -fx-background-color: transparent;">
          <padding>
             <Insets bottom="37.0" left="17.0" right="17.0" top="22.0" />
          </padding>
@@ -78,7 +77,7 @@
                         <Font size="11.0" />
                      </font>
                   </TextField>
-                  <Label fx:id="playListNameErrorMSG1" text="Maximum 150 Characters" textFill="RED" visible="false">
+                  <Label fx:id="descriptionErrMSG" text="Maximum 150 Characters" textFill="RED" visible="false">
                      <font>
                         <Font size="10.0" />
                      </font>
@@ -90,13 +89,28 @@
             </VBox>
          </children>
       </HBox>
-      <Button fx:id="submitFormButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="18.0" prefWidth="50.0" text="Submit">
-         <font>
-            <Font size="10.0" />
-         </font>
+      <HBox alignment="CENTER_RIGHT" spacing="5.0">
          <VBox.margin>
-            <Insets right="15.0" top="-26.0" />
+            <Insets right="16.0" top="-18.0" />
          </VBox.margin>
-      </Button>
+         <children>
+            <Button fx:id="submitFormButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#submitForm" prefHeight="18.0" prefWidth="50.0" text="Submit">
+               <font>
+                  <Font size="10.0" />
+               </font>
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+            </Button>
+            <Button fx:id="cancelFormButton" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#cancelForm" prefHeight="18.0" prefWidth="50.0" text="Cancle">
+               <font>
+                  <Font size="10.0" />
+               </font>
+            </Button>
+         </children>
+         <padding>
+            <Insets right="10.0" />
+         </padding>
+      </HBox>
    </children>
 </VBox>

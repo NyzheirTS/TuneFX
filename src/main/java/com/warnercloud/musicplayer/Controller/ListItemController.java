@@ -4,6 +4,7 @@ import com.warnercloud.musicplayer.Model.Track;
 import com.warnercloud.musicplayer.Service.MediaService;
 import com.warnercloud.musicplayer.Service.PlaylistNavigationService;
 import com.warnercloud.musicplayer.Utils.TimeUtils;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -22,11 +23,13 @@ public class ListItemController {
     @FXML public Label durationLabel;
     @FXML public Button playButton;
     @FXML public HBox parent;
+    @FXML public ImageView playingGif;
     private Track track;
 
 
     private boolean isSelected = false;
     private boolean isHovered = false;
+    private boolean isPlaying = false;
 
 
     public void createCard(Track track) {
@@ -40,17 +43,23 @@ public class ListItemController {
         songTitle.setText(track.getTitle());
         artistLabel.setText(track.getArtist());
         albumLabel.setText(track.getAlbum());
-        countLabel.setText(String.valueOf(track.getPlayCount()));
+        countLabel.textProperty().bind(track.playCountProperty().asString());
         durationLabel.setText(TimeUtils.formatDuration(track.getDuration()));
+        dateLabel.setText(track.getDate());
+        track.playingProperty().addListener((_, _, newValue) -> {
+                    isPlaying = newValue;
+                    updateBackground();
+                }
+        );
     }
 
     private void setHoverEffects(){
-        parent.setOnMouseEntered(e -> {
+        parent.setOnMouseEntered(_ -> {
             isHovered = true;
             playButton.setVisible(true);
             updateBackground();
         });
-        parent.setOnMouseExited(e -> {
+        parent.setOnMouseExited(_ -> {
             isHovered = false;
             playButton.setVisible(false);
             updateBackground();
@@ -69,8 +78,15 @@ public class ListItemController {
             parent.setStyle("-fx-background-color: #3399FF");  // Selected blue background
         } else if (isHovered) {
             parent.setStyle("-fx-background-color: rgba(96,109,109,0.72)");  // Hover color
+        } else if (isPlaying) {
+            parent.setStyle("-fx-background-color: transparent");
+            songTitle.setStyle("-fx-text-fill: #1D6E85");
+            playingGif.setVisible(true);// playing color
         } else {
-            parent.setStyle("-fx-background-color: transparent");  // Default
+            playingGif.setVisible(false);
+            songTitle.setStyle("-fx-text-fill: white");
+            parent.setStyle("-fx-background-color: transparent");
+            // Default
         }
     }
 

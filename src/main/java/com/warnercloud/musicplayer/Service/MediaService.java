@@ -6,7 +6,6 @@ import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventListener;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -69,12 +68,15 @@ public class MediaService {
         if (playCountTask != null && !playCountTask.isDone()) {
             playCountTask.cancel(true);
         }
-
+        if (currentTrack != null && currentTrack.isPlaying()) {
+            currentTrack.setPlaying(false);
+        }
+        track.setPlaying(true);
         playCounted = false;
         currentTrack = track;
         notifyTrackChangeListeners(track);
 
-        boolean success = mediaPlayer.media().play(track.getFilePath().toString());
+        boolean success = mediaPlayer.media().play(track.getFilePath());
         if (!success) {
             System.err.println("Failed to play track: " + track.getFilePath());
         }

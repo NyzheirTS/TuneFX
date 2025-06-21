@@ -13,6 +13,7 @@ module com.warnercloud.musicplayer {
     requires javafx.swing;
     requires com.fasterxml.jackson.databind;
     requires org.fxmisc.flowless;
+    requires jdk.compiler;
 
     opens com.warnercloud.musicplayer to javafx.fxml;
     exports com.warnercloud.musicplayer;
@@ -22,4 +23,6 @@ module com.warnercloud.musicplayer {
     exports com.warnercloud.musicplayer.Utils;
     opens com.warnercloud.musicplayer.Model to com.fasterxml.jackson.databind, javafx.fxml;
     exports com.warnercloud.musicplayer.Model;
+    exports com.warnercloud.musicplayer.FXCustomSkins;
+    opens com.warnercloud.musicplayer.FXCustomSkins to javafx.fxml;
 }

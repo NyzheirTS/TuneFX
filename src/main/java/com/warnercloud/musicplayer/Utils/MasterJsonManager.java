@@ -1,33 +1,37 @@
 package com.warnercloud.musicplayer.Utils;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.warnercloud.musicplayer.Model.Master;
 
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-public class MasterJsonManager extends JsonManager<MasterJsonManager.MasterCRUD> {
+public class MasterJsonManager extends JsonManager<Master> {
     private static final File APP_DIRECTORY = new File("LOCAL_STORAGE/Master");
     private static final String MASTER_NAME = "Home.json";
+    private Set<String> seenHashes = new HashSet<>();
 
     public MasterJsonManager() {
         super(new File(APP_DIRECTORY, MASTER_NAME));
     }
 
     @Override
-    protected TypeReference<List<MasterCRUD>> getTrackTypeReference() {
-        return new TypeReference<List<MasterCRUD>>() {};
+    protected TypeReference<List<Master>> getTrackTypeReference() {
+        return new TypeReference<List<Master>>() {};
     }
 
     public void addEntry(String filePath){
-        MasterCRUD masterCRUD = new MasterCRUD(UUID.randomUUID().toString(), dateFormat.format(new Date()), filePath, 0);
+        Master masterCRUD = new Master(UUID.randomUUID().toString(), dateFormat.format(new Date()), filePath, 0, getFileMD5(filePath));
         addEntry(masterCRUD);
     }
 
     public void updatePlaycount(String id, int playcount) {
-        List<MasterCRUD> entries = getAllEntries();
+        List<Master> entries = getAllEntries();
 
 
-        for (MasterCRUD entry : entries) {
+        for (Master entry : entries) {
             if (entry.getUuid().equals(id)) {
                 entry.setPlayCount(playcount + entry.getPlayCount());
                 break;
@@ -47,9 +51,9 @@ public class MasterJsonManager extends JsonManager<MasterJsonManager.MasterCRUD>
             return;
         }
 
-        List<MasterCRUD> currentEntries = getAllEntries();
+        List<Master> currentEntries = getAllEntries();
         Set<String> existingPaths = new HashSet<>();
-        for (MasterCRUD entry : currentEntries) {
+        for (Master entry : currentEntries) {
             existingPaths.add(entry.getFilePath());
         }
 
@@ -66,14 +70,14 @@ public class MasterJsonManager extends JsonManager<MasterJsonManager.MasterCRUD>
         // Add new files not in JSON
         for (String actualPath : actualFilePaths) {
             if (!existingPaths.contains(actualPath)) {
-                currentEntries.add(new MasterCRUD(UUID.randomUUID().toString(), dateFormat.format(new Date()), actualPath, 0));
+                currentEntries.add(new Master(UUID.randomUUID().toString(), dateFormat.format(new Date()), actualPath, 0, getFileMD5(actualPath)));
                 changed = true;
             }
         }
 
         // Remove entries that no longer exist
-        List<MasterCRUD> updatedEntries = new ArrayList<>();
-        for (MasterCRUD entry : currentEntries) {
+        List<Master> updatedEntries = new ArrayList<>();
+        for (Master entry : currentEntries) {
             if (actualFilePaths.contains(entry.getFilePath())) {
                 updatedEntries.add(entry);
             } else {
@@ -90,65 +94,6 @@ public class MasterJsonManager extends JsonManager<MasterJsonManager.MasterCRUD>
             }
         } else {
             System.out.println("No changes detected during sync.");
-        }
-
-        /*currentEntries.clear();
-        existingPaths.clear();
-        actualFilePaths.clear();
-        updatedEntries.clear();*/
-    }
-
-
-    public static class MasterCRUD{
-        private String uuid;
-        private String date;
-        private String filePath;
-        private Integer playCount;
-
-        public MasterCRUD() {}
-
-        public MasterCRUD(String uuid, String date, String filePath, Integer playCount) {
-            this.date = date;
-            this.uuid = uuid;
-            this.filePath = filePath;
-            this.playCount = playCount;
-        }
-
-        public String getUuid() {
-            return uuid;
-        }
-
-        public String getFilePath() {
-            return filePath;
-        }
-
-        public void setUuid(String uuid) {
-            this.uuid = uuid;
-        }
-
-        public void setFilePath(String filePath) {
-            this.filePath = filePath;
-        }
-
-        public String getDate() {
-            return date;
-        }
-
-        public void setDate(String date) {
-            this.date = date;
-        }
-
-        public Integer getPlayCount() {
-            return playCount;
-        }
-
-        public void setPlayCount(Integer playCount) {
-            this.playCount = playCount;
-        }
-
-        @Override
-        public String toString() {
-            return "Entry{" + "uuid='" + uuid + '\'' + ", filePath='" + filePath + '\'' + '}';
         }
     }
 

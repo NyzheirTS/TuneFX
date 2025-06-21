@@ -3,11 +3,12 @@ package com.warnercloud.musicplayer.Utils;
 import javafx.util.Duration;
 
 public class TimeUtils {
-    private TimeUtils() {}
+    private TimeUtils() {
+    }
 
 
-    public static String formatDuration(Duration duration){
-        if (duration == null){
+    public static String formatDuration(Duration duration) {
+        if (duration == null) {
             return "0:00";
         }
         int seconds = (int) Math.floor(duration.toSeconds());
@@ -16,4 +17,6 @@ public class TimeUtils {
 
         return String.format("%d:%02d", minutes, remainder);
     }
+
+
 }

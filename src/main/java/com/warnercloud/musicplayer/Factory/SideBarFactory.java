@@ -1,6 +1,5 @@
 package com.warnercloud.musicplayer.Factory;
 
-import com.warnercloud.musicplayer.Controller.MediaBarController;
 import com.warnercloud.musicplayer.Controller.SideBarController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.layout.VBox;

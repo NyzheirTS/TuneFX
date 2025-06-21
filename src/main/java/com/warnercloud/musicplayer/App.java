@@ -18,7 +18,7 @@ public class App extends Application {
         stage.setTitle("Hello!");
         stage.setScene(scene);
         stage.setMinHeight(650);
-        stage.setMinWidth(1000);
+        stage.setMinWidth(1090);
         stage.setOnCloseRequest(event -> MediaService.getInstance().dispose());
         stage.show();
     }

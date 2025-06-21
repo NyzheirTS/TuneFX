@@ -39,14 +39,17 @@
                   <HBox prefHeight="100.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
                   <VBox alignment="BOTTOM_CENTER">
                      <children>
-                        <HBox alignment="CENTER" style="-fx-border-color: white;">
+                        <HBox alignment="CENTER" prefHeight="31.0" prefWidth="250.0" style="-fx-border-color: rgba(29, 110, 133, 1); -fx-border-radius: 16; -fx-border-width: 2;">
                            <children>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
                                     <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Search.png" />
                                  </image>
                               </ImageView>
-                              <TextField prefWidth="221.0" promptText="Search" />
+                              <TextField fx:id="searchBox" prefWidth="221.0" promptText="Search" style="-fx-background-color: transparent;">
+                                 <font>
+                                    <Font size="13.0" />
+                                 </font></TextField>
                            </children>
                         </HBox>
                      </children>

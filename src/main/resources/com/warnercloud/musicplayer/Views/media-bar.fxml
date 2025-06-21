@@ -59,9 +59,9 @@
                <children>
                   <Button fx:id="shuffleButton" mnemonicParsing="false" onAction="#shufflePlaylistFunction" prefHeight="24.0" prefWidth="24.0" style="-fx-background-color: transparent;">
                      <graphic>
-                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                        <ImageView fx:id="shuffleImg" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                            <image>
-                              <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Shuffle.png" />
+                              <Image url="@../Assets/Shuffle.png" />
                            </image>
                         </ImageView>
                      </graphic>
@@ -76,9 +76,9 @@
                   </Button>
                   <Button fx:id="pausePlayButton" mnemonicParsing="false" onAction="#pausePlayFunction" prefHeight="56.0" prefWidth="56.0" style="-fx-background-color: transparent;">
                      <graphic>
-                        <ImageView fitHeight="45.0" fitWidth="45.0" pickOnBounds="true" preserveRatio="true">
+                        <ImageView fx:id="pausePlayIMG" fitHeight="45.0" fitWidth="45.0" pickOnBounds="true" preserveRatio="true">
                            <image>
-                              <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Group%20172.png" />
+                              <Image url="@../Assets/play.png" />
                            </image>
                         </ImageView>
                      </graphic></Button>
@@ -109,6 +109,21 @@
             <Insets />
          </HBox.margin>
          <children>
+            <Button fx:id="queueButton" mnemonicParsing="false" onAction="#showQueue" style="-fx-background-color: transparent;">
+               <graphic>
+                  <ImageView fitHeight="32.0" fitWidth="32.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Layers.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+               <HBox.margin>
+                  <Insets top="2.0" />
+               </HBox.margin>
+               <padding>
+                  <Insets left="-1.0" />
+               </padding>
+            </Button>
             <Button fx:id="volumeButton" mnemonicParsing="false" onAction="#muteRestoreFunction" style="-fx-background-color: transparent;">
                <graphic>
                   <ImageView fx:id="speakerIcon" fitHeight="26.0" fitWidth="26.0" pickOnBounds="true" preserveRatio="true">

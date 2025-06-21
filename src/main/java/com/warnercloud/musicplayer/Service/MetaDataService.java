@@ -3,6 +3,7 @@ package com.warnercloud.musicplayer.Service;
 import com.mpatric.mp3agic.ID3v2;
 import com.mpatric.mp3agic.Mp3File;
 import com.warnercloud.musicplayer.Model.Track;
+import com.warnercloud.musicplayer.Utils.DedupeHelper;
 import javafx.application.Platform;
 import javafx.scene.image.Image;
 import javafx.util.Duration;
@@ -20,7 +21,8 @@ import java.util.concurrent.Executors;
 
 public class MetaDataService {
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(4);  // Keep alive across calls
+    private final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private final DedupeHelper helper = new DedupeHelper();// Keep alive across calls
 
 
     public void extractBasicMetadataAsync(List<Track> tracks, Runnable onComplete) {
@@ -40,7 +42,7 @@ public class MetaDataService {
 
                         byte[] imageData = tag.getAlbumImage();
                         if (imageData != null) {
-                            // Use a hash or ID to uniquely name the cache file
+                            //unique hash
                             String imageHash = Integer.toHexString(Arrays.hashCode(imageData));
                             File imgFile = new File("LOCAL_STORAGE/cover-cache/" + imageHash + ".jpg");
 

@@ -1,5 +1,6 @@
 package com.warnercloud.musicplayer.Controller;
 
+import com.warnercloud.musicplayer.FXCustomSkins.CustomSliderBar;
 import com.warnercloud.musicplayer.Model.Track;
 import com.warnercloud.musicplayer.Service.MediaService;
 import com.warnercloud.musicplayer.Service.PlaylistNavigationService;
@@ -21,7 +22,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-import javax.print.attribute.standard.Media;
+import java.util.Objects;
 
 public class MediaBarController {
     @FXML public HBox parentContainer;
@@ -44,6 +45,10 @@ public class MediaBarController {
     @FXML public HBox volumeControlContainer;
     @FXML public Button volumeButton;
     @FXML public Slider volumeSlider;
+    @FXML public ImageView shuffleImg;
+    @FXML public Button queueButton;
+    @FXML public ImageView speakerIcon;
+    @FXML public ImageView pausePlayIMG;
 
     private boolean wasPlaying;
     private boolean updatingValue;
@@ -53,6 +58,8 @@ public class MediaBarController {
     private long lastVolumeTime = 0;// For throttling seeks
     private double lastVolume = 0;
     private long volume = 100;
+    private boolean shuffled = false;
+    private boolean isPlaying = false;
 
     public MediaBarController() {
         MediaService.getInstance().addTrackChangeListener(this::updateTrack);
@@ -61,6 +68,7 @@ public class MediaBarController {
     public void initUI(){
         initSeekBar();
         initVolumeControls();
+        updateShuffleIcon(PlaylistNavigationService.getInstance().isIsShuffled());
     }
 
     private void updateTrack(Track track) {
@@ -71,12 +79,14 @@ public class MediaBarController {
             durationLabel.setText(TimeUtils.formatDuration(track.getDuration()));
             // Start playback immediately
             MediaService.getInstance().play();
+            updatePausePlayIcon(true);
             // Start polling for progress updates if playback has started
             startPlaybackPolling();
         });
     }
 
     private void initSeekBar() {
+        seekBar.setSkin(new CustomSliderBar(seekBar));
         seekBar.setMin(0.0);
         seekBar.setMax(1.0);
         seekBar.setValue(0.0);
@@ -87,6 +97,7 @@ public class MediaBarController {
 
 
     private void initVolumeControls() {
+        volumeSlider.setSkin(new CustomSliderBar(volumeSlider));
         volumeSlider.setMin(0.00);
         volumeSlider.setMax(100.00);
         volumeSlider.setValue(volume);
@@ -170,17 +181,19 @@ public class MediaBarController {
 
     @FXML
     public void shufflePlaylistFunction(ActionEvent event) {
-
-        /* TODO document why this method is empty */
-        System.out.println(MediaService.getInstance().getCurrentTrack().toString());
+        boolean newShuffleState = !PlaylistNavigationService.getInstance().isIsShuffled();
+        PlaylistNavigationService.getInstance().setIsShuffled(newShuffleState);
+        updateShuffleIcon(newShuffleState);
     }
 
     @FXML
     public void pausePlayFunction(ActionEvent event) {
         if (MediaService.getInstance().isPlaying()) {
             MediaService.getInstance().pause();
+            updatePausePlayIcon(false);
         } else {
             MediaService.getInstance().play();
+            updatePausePlayIcon(true);
         }
     }
 
@@ -229,5 +242,22 @@ public class MediaBarController {
             MediaService.getInstance().unmute();
             Platform.runLater(() -> volumeSlider.setValue(lastVolume));
         }
+    }
+    private void updatePausePlayIcon(boolean isPlaying) {
+        String iconPath = isPlaying ? "/com/warnercloud/musicplayer/Assets/pause.png" : "/com/warnercloud/musicplayer/Assets/play.png";
+        Platform.runLater(() -> pausePlayIMG.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream(iconPath)))));
+        this.isPlaying = isPlaying;
+    }
+
+    private void updateShuffleIcon(boolean isShuffled) {
+        String iconPath = isShuffled ? "/com/warnercloud/musicplayer/Assets/ShuffleOn.png" : "/com/warnercloud/musicplayer/Assets/Shuffle.png";
+
+        Platform.runLater(() -> shuffleImg.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream(iconPath)))));
+
+        this.shuffled = isShuffled; // keep local state in sync
+    }
+
+    @FXML
+    public void showQueue(ActionEvent actionEvent) {
     }
 }
