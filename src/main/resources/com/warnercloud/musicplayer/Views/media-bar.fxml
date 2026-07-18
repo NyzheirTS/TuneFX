@@ -10,16 +10,12 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox fx:id="parentContainer" alignment="CENTER" spacing="12.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.MediaBarController">
+<HBox fx:id="parentContainer" alignment="CENTER" spacing="12.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.MediaBarController">
    <padding>
       <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
    </padding>
    <children>
-      <ImageView fx:id="albumCover" fitHeight="93.0" fitWidth="93.0" pickOnBounds="true" preserveRatio="true">
-         <image>
-            <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/Air(ep)_album_cover.jpeg" />
-         </image>
-      </ImageView>
+      <ImageView fx:id="albumCover" fitHeight="93.0" fitWidth="93.0" pickOnBounds="true" preserveRatio="true" />
       <VBox fx:id="trackInfoContainer" alignment="CENTER">
          <children>
             <Label fx:id="songLabel" maxHeight="27.0" maxWidth="157.0" minHeight="27.0" minWidth="80.0" prefHeight="27.0" prefWidth="157.0" text="Air" textFill="WHITE">
@@ -70,7 +66,7 @@
                      <graphic>
                         <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                            <image>
-                              <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Group%20173.png" />
+                              <Image url="@../Assets/Group%20173.png" />
                            </image></ImageView>
                      </graphic>
                   </Button>
@@ -86,7 +82,7 @@
                      <graphic>
                         <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                            <image>
-                              <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Group%2017.png" />
+                              <Image url="@../Assets/Group%2017.png" />
                            </image></ImageView>
                      </graphic>
                   </Button>
@@ -94,7 +90,7 @@
                      <graphic>
                         <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                            <image>
-                              <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Update%20Left%20Rotation.png" />
+                              <Image url="@../Assets/Update%20Left%20Rotation.png" />
                            </image>
                         </ImageView>
                      </graphic>
@@ -113,7 +109,7 @@
                <graphic>
                   <ImageView fitHeight="32.0" fitWidth="32.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Layers.png" />
+                        <Image url="@../Assets/Layers.png" />
                      </image>
                   </ImageView>
                </graphic>
@@ -128,7 +124,7 @@
                <graphic>
                   <ImageView fx:id="speakerIcon" fitHeight="26.0" fitWidth="26.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../../../../../../../../../Users/eshas/OneDrive/Desktop/MusicPlayerIcons/Speaker.png" />
+                        <Image url="@../Assets/Speaker.png" />
                      </image>
                   </ImageView>
                </graphic>

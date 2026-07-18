@@ -7,11 +7,11 @@ public class TimeUtils {
     }
 
 
-    public static String formatDuration(Duration duration) {
-        if (duration == null) {
+    public static String formatDuration(int duration) {
+        if (duration == 0) {
             return "0:00";
         }
-        int seconds = (int) Math.floor(duration.toSeconds());
+        int seconds = (int) Math.floor(duration);
         int minutes = seconds / 60;
         int remainder = seconds % 60;
 

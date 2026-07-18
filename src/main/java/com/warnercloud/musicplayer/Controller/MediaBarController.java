@@ -60,6 +60,7 @@ public class MediaBarController {
     private long volume = 100;
     private boolean shuffled = false;
     private boolean isPlaying = false;
+    private static final String BASE_IMAGE_URL = "https://api.warnercloud.com/api/image/";
 
     public MediaBarController() {
         MediaService.getInstance().addTrackChangeListener(this::updateTrack);
@@ -73,8 +74,8 @@ public class MediaBarController {
 
     private void updateTrack(Track track) {
         Platform.runLater(() -> {
-            albumCover.setImage(new Image(track.getCover(), 93, 93, true, true, true));
-            artistLabel.setText(track.getArtist());
+            albumCover.setImage(new Image(BASE_IMAGE_URL+track.getTrack_id(), 93, 93, true, true, true));
+            artistLabel.setText(track.getArtist_name());
             songLabel.setText(track.getTitle());
             durationLabel.setText(TimeUtils.formatDuration(track.getDuration()));
             // Start playback immediately
@@ -168,7 +169,7 @@ public class MediaBarController {
                 try {
                     double progress = (double) currentTime / totalDuration;
                     seekBar.setValue(progress);
-                    runtimeLabel.setText(TimeUtils.formatDuration(Duration.millis(currentTime)));
+                    runtimeLabel.setText(TimeUtils.formatDuration((int) currentTime));
                 } finally {
                     updatingValue = false;
                 }
@@ -219,9 +220,6 @@ public class MediaBarController {
 
     @FXML
     public void repeatTracksFunction(ActionEvent event) {
-        MediaService.getInstance().setRepeat(!MediaService.getInstance().repeatEnabled());
-        System.out.println(MediaService.getInstance().repeatEnabled());
-
     }
 
     private void loadTrack(Track track) {

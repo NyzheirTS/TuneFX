@@ -1,7 +1,6 @@
 package com.warnercloud.musicplayer.Service;
 
 import com.warnercloud.musicplayer.Model.Track;
-import com.warnercloud.musicplayer.Utils.MasterJsonManager;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class MediaService {
@@ -24,8 +22,8 @@ public class MediaService {
     private final List<Consumer<Track>> trackChangeListeners = new ArrayList<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> playCountTask;
-    private boolean playCounted = false;
-    private final MasterJsonManager masterJsonManager = new MasterJsonManager();
+    private static final String BASE_STREAM_URL = "https://api.warnercloud.com/api/stream/";
+    //private boolean playCounted = false;
 
 
     private MediaService() {
@@ -41,9 +39,7 @@ public class MediaService {
             }
 
             @Override
-            public void playing(final MediaPlayer mediaPlayer) {
-                onTrackStarted();
-            }
+            public void playing(final MediaPlayer mediaPlayer) {}
 
         };
         mediaPlayer.events().addMediaPlayerEventListener(mediaPlayerEventListener);
@@ -72,13 +68,13 @@ public class MediaService {
             currentTrack.setPlaying(false);
         }
         track.setPlaying(true);
-        playCounted = false;
+        //playCounted = false;
         currentTrack = track;
         notifyTrackChangeListeners(track);
 
-        boolean success = mediaPlayer.media().play(track.getFilePath());
+        boolean success = mediaPlayer.media().play(BASE_STREAM_URL + track.getTrack_id());
         if (!success) {
-            System.err.println("Failed to play track: " + track.getFilePath());
+            System.err.println("Failed to play track: " + track.getTrack_id());
         }
     }
 
@@ -175,7 +171,7 @@ public class MediaService {
     }
 
 
-    private void onTrackStarted(){
+   /* private void onTrackStarted(){
         //System.out.println("Playback confirmed started.");
 
         if (currentTrack == null || playCounted) return;
@@ -200,5 +196,5 @@ public class MediaService {
                 e.printStackTrace();
             }
         }, 50, TimeUnit.SECONDS);
-    }
+    }*/
 }

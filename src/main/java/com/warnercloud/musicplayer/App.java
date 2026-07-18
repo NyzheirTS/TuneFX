@@ -1,5 +1,6 @@
 package com.warnercloud.musicplayer;
 
+
 import com.warnercloud.musicplayer.Service.MediaService;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -7,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 public class App extends Application {
     private static Stage mainStage;
@@ -15,7 +17,7 @@ public class App extends Application {
         mainStage = stage;
         FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("Views/main-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
-        stage.setTitle("Hello!");
+        stage.setTitle("TuneFX");
         stage.setScene(scene);
         stage.setMinHeight(650);
         stage.setMinWidth(1090);
@@ -27,7 +29,7 @@ public class App extends Application {
         return mainStage;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
         launch();
     }
 

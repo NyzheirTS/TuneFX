@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public class PlaylistNavigationService {
+
     private static PlaylistNavigationService instance;
 
     private final List<Track> allTracks = new ArrayList<>();
@@ -15,12 +16,15 @@ public class PlaylistNavigationService {
     private final List<Track> filteredTracks = new ArrayList<>();
     private final List<Track> activePlaylist = new ArrayList<>();
     private final Deque<Track> playNextQueue = new LinkedList<>();
+
     private final List<Consumer<List<Track>>> allTrackListeners = new ArrayList<>();
     private final List<Consumer<List<Track>>> queueListeners = new ArrayList<>();
     private final List<Consumer<List<Track>>> trackFilterListeners = new ArrayList<>();
+    private final List<Consumer<Integer>> indexListeners = new ArrayList<>();
 
-    private String currentTrackUUID = null;
-    private String currentPlaylistUUID = null;
+    private Integer currentTrackId = null;
+    private String currentPlaylistName = null;
+
     private final BooleanProperty isShuffled = new SimpleBooleanProperty(false);
     private boolean isShuffleApplied = false;
 
@@ -36,10 +40,8 @@ public class PlaylistNavigationService {
     public void initPlaylistService(List<Track> tracks) {
         allTracks.clear();
         allTracks.addAll(tracks);
-
         filteredTracks.clear();
         filteredTracks.addAll(allTracks);
-
         notifyTrackConsumers();
     }
 
@@ -47,257 +49,179 @@ public class PlaylistNavigationService {
         playbackQueue.clear();
         playbackQueue.addAll(tracks);
         resetCursor();
-        //notifyQueueConsumers();
+        notifyQueueConsumers();
     }
 
     public void startPlaybackFrom(Track clickedTrack) {
-        if (clickedTrack.getUUID().equals(currentTrackUUID)) return;
+        if (clickedTrack == null) return;
 
         int startIndex = indexOfInFilteredTracks(clickedTrack);
         if (startIndex == -1) return;
 
         activePlaylist.clear();
-        activePlaylist.addAll(filteredTracks); // snapshotting for playback to avoid bad updates when browsing playlists
+        activePlaylist.addAll(filteredTracks);
 
         if (isShuffled.get()) {
             isShuffleApplied = true;
-
             List<Track> tail = new ArrayList<>(activePlaylist.subList(startIndex, activePlaylist.size()));
             Collections.shuffle(tail);
-
-            List<Track> newQueue = new ArrayList<>(tail);
-            setPlaybackQueue(newQueue);
+            setPlaybackQueue(tail);
         } else {
             isShuffleApplied = false;
-            setPlaybackQueue(activePlaylist);
+            setPlaybackQueue(new ArrayList<>(activePlaylist));
         }
-        //print();
-        currentTrackUUID = clickedTrack.getUUID();
+
+        currentTrackId = clickedTrack.getTrack_id();
         MediaService.getInstance().loadTrack(clickedTrack);
     }
 
-
-    public void print() {
-        System.out.println("Queue Status -> Shuffled = " + isShuffleApplied + ", Size = " + playbackQueue.size());
-        for (int i = 0; i < playbackQueue.size(); i++) {
-            Track t = playbackQueue.get(i);
-            System.out.println((i + 1) + ". " + t.getTitle() + " [" + t.getUUID() + "]");
-        }
-    }
-
-
-    public void setIsShuffled(boolean isShuffled) {
-        this.isShuffled.set(isShuffled);
+    public void setIsShuffled(boolean shuffled){
+        isShuffled.set(shuffled);
         regenerateQueueBasedOnShuffle();
     }
 
-    private void regenerateQueueBasedOnShuffle() {
-        Track currentTrack = getCurrentTrack();
-        if (activePlaylist.isEmpty()) return;
-        if (isShuffled.get()) {
-            // SHUFFLE ON
-            shuffleON(currentTrack);
-        } else {
-            // SHUFFLE OFF
-            shuffleOFF(currentTrack);
+    private void regenerateQueueBasedOnShuffle(){
+        if(activePlaylist.isEmpty()) return;
+        Track current = getCurrentTrack();
+        if(isShuffled.get()) shuffleOn(current);
+        else shuffleOff(current);
+    }
+
+    private void shuffleOn(Track current){
+        List<Track> queue = new ArrayList<>();
+        List<Track> rest = new ArrayList<>();
+
+        if(current != null){
+            for(Track t: activePlaylist){
+                if(t.getTrack_id()!=current.getTrack_id()) rest.add(t);
+            }
+            Collections.shuffle(rest);
+            queue.add(current);
+            queue.addAll(rest);
+        }else{
+            queue.addAll(activePlaylist);
+            Collections.shuffle(queue);
         }
-        //print();
+
+        isShuffleApplied=true;
+        setPlaybackQueue(queue);
+        if(current!=null) currentTrackId=current.getTrack_id();
     }
 
-    private void shuffleON(Track currentTrack){
-        List<Track> toShuffle = new ArrayList<>();
-        List<Track> newQueue = new ArrayList<>();
-        if (currentTrack != null) {
-            for (Track track : activePlaylist) {
-                if (!track.getUUID().equals(currentTrack.getUUID())) {
-                    toShuffle.add(track);
-                }
-            }
-            Collections.shuffle(toShuffle);
-
-            Track playingTrack = findTrackInListByUUID(activePlaylist, currentTrack.getUUID());
-
-            if (playingTrack != null) {
-                newQueue.add(playingTrack);
-                newQueue.addAll(toShuffle);
-                setPlaybackQueue(newQueue);
-                currentTrackUUID = playingTrack.getUUID(); // update to ensure match in new queue
-            } else {
-                System.err.println("Error: currentTrack not found in activePlaylist.");
-                return;
-            }
-        } else {
-            List<Track> shuffled = new ArrayList<>(activePlaylist);
-            Collections.shuffle(shuffled);
-            setPlaybackQueue(shuffled);
-        }
-        isShuffleApplied = true;
+    private void shuffleOff(Track current){
+        isShuffleApplied=false;
+        setPlaybackQueue(new ArrayList<>(activePlaylist));
+        if(current!=null) currentTrackId=current.getTrack_id();
     }
 
-    private void shuffleOFF(Track currentTrack){
-        // SHUFFLE OFF
-        List<Track> newQueue = new ArrayList<>(activePlaylist);
-        setPlaybackQueue(newQueue);
-        isShuffleApplied = false;
-
-        if (currentTrack != null) {
-            Track playingTrack = findTrackInListByUUID(activePlaylist, currentTrack.getUUID());
-            if (playingTrack != null) {
-                currentTrackUUID = playingTrack.getUUID();
-            }
-        }
-    }
-
-
-    private Track findTrackInListByUUID(List<Track> list, String uuid) {
-        return list.stream()
-                .filter(track -> track.getUUID().equals(uuid))
-                .findFirst()
-                .orElse(null);
-    }
-
-
-
-    public void addToPlayNextQueue(Track track) {
-        playNextQueue.add(track);
-    }
-
-    private int indexOfInFilteredTracks(Track track) {
-        for (int i = 0; i < filteredTracks.size(); i++) {
-            if (filteredTracks.get(i).getUUID().equals(track.getUUID())) {
-                return i;
-            }
+    private int indexOfInFilteredTracks(Track track){
+        for(int i=0;i<filteredTracks.size();i++){
+            if(filteredTracks.get(i).getTrack_id()==track.getTrack_id()) return i;
         }
         return -1;
     }
 
-    public Track playNext() {
-        int index = getCurrentIndexInQueue();
-        if (!playNextQueue.isEmpty()) {
-            return playNextQueue.pop();
-        } else {
-            if (index != -1 && index + 1 < playbackQueue.size()) {
-                Track nextTrack = playbackQueue.get(index + 1);
-                currentTrackUUID = nextTrack.getUUID();
-                System.out.println("Next track: " + nextTrack.getTitle() + " - Position " + (index + 1) + "/" + playbackQueue.size());
-                return nextTrack;
-            }
-        }
-        return null;
-    }
-
-    public Track playPrevious() {
-        int index = getCurrentIndexInQueue();
-        if (index > 0) {
-            Track prevTrack = playbackQueue.get(index - 1);
-            currentTrackUUID = prevTrack.getUUID();
-            return prevTrack;
-        }
-        return null;
-    }
-
-    public Track peekNext() {
-        int index = getCurrentIndexInQueue();
-        if (index + 1 < playbackQueue.size()) {
-            return playbackQueue.get(index + 1);
-        }
-        return null;
-    }
-
-    public Track peekPrevious() {
-        int index = getCurrentIndexInQueue();
-        if (index - 1 >= 0) {
-            return playbackQueue.get(index - 1);
-        }
-        return null;
-    }
-
-    public Track getCurrentTrack() {
-        if (currentTrackUUID == null) return null;
-        return playbackQueue.stream()
-                .filter(t -> t.getUUID().equals(currentTrackUUID))
-                .findFirst()
-                .orElse(null);
-    }
-
-    private int getCurrentIndexInQueue() {
-        if (currentTrackUUID == null) return -1;
-        for (int i = 0; i < playbackQueue.size(); i++) {
-            if (playbackQueue.get(i).getUUID().equals(currentTrackUUID)) {
-                return i;
-            }
+    private int getCurrentIndexInQueue(){
+        if(currentTrackId==null) return -1;
+        for(int i=0;i<playbackQueue.size();i++){
+            if(playbackQueue.get(i).getTrack_id()==currentTrackId) return i;
         }
         return -1;
     }
 
-    public void filterTracks(Set<String> playlistUUIDs, String playlistName) {
-        if (currentTrackUUID.equals(playlistName)) return;
+    public Track getCurrentTrack(){
+        if(currentTrackId==null) return null;
+        return findTrackById(playbackQueue,currentTrackId);
+    }
+
+    private Track findTrackById(List<Track> list,int id){
+        for(Track t:list){
+            if(t.getTrack_id()==id) return t;
+        }
+        return null;
+    }
+
+    public Track playNext(){
+        if(!playNextQueue.isEmpty()) return playNextQueue.pop();
+        int index=getCurrentIndexInQueue();
+        if(index!=-1 && index+1<playbackQueue.size()){
+            Track t=playbackQueue.get(index+1);
+            currentTrackId=t.getTrack_id();
+            return t;
+        }
+        return null;
+    }
+
+    public Track playPrevious(){
+        int index=getCurrentIndexInQueue();
+        if(index>0){
+            Track t=playbackQueue.get(index-1);
+            currentTrackId=t.getTrack_id();
+            return t;
+        }
+        return null;
+    }
+
+    public Track peekNext(){
+        int i=getCurrentIndexInQueue();
+        return (i!=-1 && i+1<playbackQueue.size())?playbackQueue.get(i+1):null;
+    }
+
+    public Track peekPrevious(){
+        int i=getCurrentIndexInQueue();
+        return i>0?playbackQueue.get(i-1):null;
+    }
+
+    public void addToPlayNextQueue(Track t){ playNextQueue.add(t); }
+
+    public void filterTracks(Set<Integer> trackIds,String playlistName){
+        if(Objects.equals(currentPlaylistName,playlistName)) return;
         filteredTracks.clear();
-        for (Track track : allTracks) {
-            if (playlistUUIDs.contains(track.getUUID())) {
-                filteredTracks.add(track);
-            }
+        for(Track t:allTracks){
+            if(trackIds.contains(t.getTrack_id())) filteredTracks.add(t);
         }
-        currentPlaylistUUID = playlistName;
+        currentPlaylistName=playlistName;
         notifyTrackFilterConsumers();
     }
 
-
-    public void addTrackToQueue(Track track) {
-        int index = getCurrentIndexInQueue();
-        if (index != -1) {
-            playbackQueue.add(index + 1, track);
-            } else {
-                playbackQueue.add(track);
-        }
-        currentTrackUUID = track.getUUID();
+    public void addTrackToQueue(Track t){
+        int index=getCurrentIndexInQueue();
+        if(index==-1) playbackQueue.add(t);
+        else playbackQueue.add(index+1,t);
     }
 
-    public void resetCursor() {
-        currentTrackUUID = null;
-    }
+    public void resetCursor(){ currentTrackId=null; }
 
-    public void clearPlaybackQueue() {
+    public void clearPlaybackQueue(){
         playbackQueue.clear();
         resetCursor();
     }
 
-    public boolean isIsShuffled() {
-        return isShuffled.get();
+    public boolean isIsShuffled(){ return isShuffled.get(); }
+
+    private void notifyTrackConsumers(){
+        List<Track> copy=List.copyOf(filteredTracks);
+        for(var c:allTrackListeners) c.accept(copy);
     }
 
-    private void notifyTrackConsumers() {
-        List<Track> ss = List.copyOf(filteredTracks);
-        for (Consumer<List<Track>> consumer : allTrackListeners) {
-            consumer.accept(ss);
-        }
+    private void notifyQueueConsumers(){
+        List<Track> copy=List.copyOf(playbackQueue);
+        for(var c:queueListeners) c.accept(copy);
     }
 
-
-    private void notifyQueueConsumers() {
-        for (Consumer<List<Track>> consumer : queueListeners) {
-            consumer.accept(new ArrayList<>(playbackQueue));
-        }
+    private void notifyTrackFilterConsumers(){
+        List<Track> copy=List.copyOf(filteredTracks);
+        for(var c:trackFilterListeners) c.accept(copy);
     }
 
-    private void notifyTrackFilterConsumers() {
-        List<Track> ss = List.copyOf(filteredTracks);
-        for (Consumer<List<Track>> consumer : trackFilterListeners) {
-            consumer.accept(ss);
-        }
+    private void notifyIndexConsumers(Integer index){
+        for(var c:indexListeners) c.accept(index);
     }
 
-    public void addListFullListener(Consumer<List<Track>> consumer) {
-        allTrackListeners.add(consumer);
-    }
-
-    public void addQueueFullListener(Consumer<List<Track>> consumer) {
-        queueListeners.add(consumer);
-    }
-
-    public void addTrackFilterListener(Consumer<List<Track>> consumer) {
-        trackFilterListeners.add(consumer);
-    }
+    public void addIndexListiner(Consumer<Integer> c){ indexListeners.add(c);}
+    public void addListFullListener(Consumer<List<Track>> c){ allTrackListeners.add(c);}
+    public void addQueueListeners(Consumer<List<Track>> c){ queueListeners.add(c);}
+    public void addTrackFilterListener(Consumer<List<Track>> c){ trackFilterListeners.add(c);}
 }
 
 
