@@ -11,7 +11,7 @@ public class TimeUtils {
         if (duration == 0) {
             return "0:00";
         }
-        int seconds = (int) Math.floor(duration);
+        int seconds = (int) (double) duration;
         int minutes = seconds / 60;
         int remainder = seconds % 60;
 

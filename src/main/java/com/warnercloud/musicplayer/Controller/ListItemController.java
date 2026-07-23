@@ -15,6 +15,9 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 public class ListItemController {
     @FXML public ImageView coverArtImg;
     @FXML public Label songTitle;
@@ -28,21 +31,25 @@ public class ListItemController {
     @FXML public ImageView playingGif;
     private Track track;
     private static final String BASE_IMAGE_URL = "https://api.warnercloud.com/api/thumbnail/";
-
+    private ChangeListener<Number> currentTrackListener;
 
     private boolean isSelected = false;
     private boolean isHovered = false;
     private boolean isPlaying = false;
-    private ChangeListener<Boolean> playingListener;
 
 
-    public void createCard(Track track) {
+    public void createCard(Track track, Consumer<Integer> callback) {
         dispose();
         this.track = track;
         isSelected = false;
         isHovered = false;
         setLabels();
         setHoverEffects();
+        setUpTrackListener();
+        playButton.setOnAction(event -> {
+            callback.accept(track.getTrack_id());
+            event.consume();
+        });
     }
 
     private void setLabels(){
@@ -50,15 +57,19 @@ public class ListItemController {
         songTitle.setText(track.getTitle());
         artistLabel.setText(track.getArtist_name());
         albumLabel.setText(track.getAlbum_title());
-        countLabel.textProperty().bind(track.playCountProperty().asString());
+        countLabel.setText(String.valueOf(track.getListens()));
         durationLabel.setText(TimeUtils.formatDuration(track.getDuration()));
-        dateLabel.setText(track.getDate_created().toString());
-        isPlaying = track.isPlaying();
-        playingListener = (_, _, newValue) -> {
-            isPlaying = newValue;
+        dateLabel.setText(track.getDate_created());
+    }
+
+    private void setUpTrackListener(){
+        isPlaying = MediaService.getInstance().getCurrentTrackId() == track.getTrack_id();
+        currentTrackListener = (_, _, newValue) -> {
+            isPlaying = newValue.intValue() == track.getTrack_id();
             updateBackground();
         };
-        track.playingProperty().addListener(playingListener);
+        MediaService.getInstance().currentTrackIdProperty().addListener(currentTrackListener);
+        updateBackground();
     }
 
     private void setHoverEffects(){
@@ -72,13 +83,6 @@ public class ListItemController {
             playButton.setVisible(false);
             updateBackground();
         });
-    }
-
-
-    @FXML
-    public void startPlayback(ActionEvent actionEvent) {
-        System.out.println("Starting playback: " + track.getTitle() + " - " + track.getArtist_name() + " - " + track.getTrack_id());
-        PlaylistNavigationService.getInstance().startPlaybackFrom(track);
     }
 
     private void updateBackground() {
@@ -101,10 +105,10 @@ public class ListItemController {
     // dispose of listeners when discarded by flowless
     public void dispose() {
         countLabel.textProperty().unbind();
-        if (track != null && playingListener != null) {
-            track.playingProperty().removeListener(playingListener);
+        if(currentTrackListener != null){
+            MediaService.getInstance().currentTrackIdProperty().removeListener(currentTrackListener);
         }
-        playingListener = null;
+        currentTrackListener = null;
         track = null;
     }
     public void setSelected(boolean selected) {

@@ -5,7 +5,9 @@ import com.warnercloud.musicplayer.Model.Track;
 import com.warnercloud.musicplayer.Service.APIService;
 import com.warnercloud.musicplayer.Service.PlaylistNavigationService;
 import com.warnercloud.musicplayer.Utils.JsonUtil;
+import com.warnercloud.musicplayer.Utils.TrackCatalog;
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -28,6 +30,7 @@ public class CenterViewController {
     @FXML public BorderPane parent;
     @FXML public Label trackCount;
     @FXML public TextField searchBox;
+    @FXML public Label playlistTitle;
 
     private int lastSelectedIndex = -1;
     private final ObservableList<Track> selectedTracks = FXCollections.observableArrayList();
@@ -39,6 +42,7 @@ public class CenterViewController {
     private final ClipboardContent content = new ClipboardContent();
     private final PauseTransition pauseTransition = new PauseTransition(Duration.millis(250));
     private static final String CONTROLLER = "controller";
+    private long playlistRequestVersion = 0;
 
     public void initContainer() {
         styleVf();
@@ -60,10 +64,13 @@ public class CenterViewController {
         vf.setClip(clip);
     }
 
-    public void loadPlaylist(int playlistId) {
+    public void loadPlaylist(int playlistId, String title, String description) {
+        long requestVersion = ++playlistRequestVersion;
         clearSelection();
         currentTracks.clear();
         visibleTracks.clear();
+
+        Platform.runLater(() -> playlistTitle.setText(title));
 
         Task<List<Track>> task = new Task<>() {
             @Override
@@ -75,7 +82,11 @@ public class CenterViewController {
         };
 
         task.setOnSucceeded(e -> {
+            if (requestVersion != playlistRequestVersion) {
+                return;
+            }
             currentTracks.setAll(task.getValue());
+            TrackCatalog.getInstance().CatalogTracks(currentTracks);
             filterVisibleTracks(searchBox.getText());
         });
         task.setOnFailed(e -> { });
@@ -103,7 +114,11 @@ public class CenterViewController {
 
     // PROPER IMPLEMENTATION YOU NEED TO BUILD A WRAPPER FOR YOUR NODES!!!
     private Cell<Track, ?> trackCell(Track track) {
-        HBox node = ListItemFactory.createListItem(track);
+        HBox node = ListItemFactory.createListItem(track, trackId ->
+                PlaylistNavigationService.getInstance().startPlaybackFrom(
+                        trackId,
+                        currentTracks.stream().map(Track::getTrack_id).toList()
+                ));
         ListItemController controller = (ListItemController) node.getProperties().get(CONTROLLER);
         int index = currentTracks.indexOf(track);
         controller.setSelected(selectedTracks.contains(track));
@@ -195,7 +210,7 @@ public class CenterViewController {
         MenuItem copy = new MenuItem("Copy");
         copy.setOnAction(e -> System.out.println(getSelectedClipboardContent()));
         MenuItem queue = new MenuItem("Queue");
-        queue.setOnAction(e -> PlaylistNavigationService.getInstance().addToPlayNextQueue(track));
+        queue.setOnAction(e -> PlaylistNavigationService.getInstance().addToPlayNextQueue(track.getTrack_id()));
         menu.getItems().addAll(copy, queue);
         node.setOnContextMenuRequested(e -> menu.show(node, e.getScreenX(), e.getScreenY()));
     }

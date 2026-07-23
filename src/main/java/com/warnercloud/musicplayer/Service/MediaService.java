@@ -1,16 +1,15 @@
 package com.warnercloud.musicplayer.Service;
 
-import com.warnercloud.musicplayer.Model.Track;
+import javafx.application.Platform;
+import javafx.beans.property.*;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventListener;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.function.Consumer;
 
 public class MediaService {
 
@@ -18,11 +17,13 @@ public class MediaService {
 
     private final MediaPlayerFactory mediaPlayerFactory;
     private MediaPlayer mediaPlayer;
-    private Track currentTrack;
-    private final List<Consumer<Track>> trackChangeListeners = new ArrayList<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> playCountTask;
     private static final String BASE_STREAM_URL = "https://api.warnercloud.com/api/stream/";
+    private final IntegerProperty currentTrackId = new SimpleIntegerProperty(this, "currentTrackId", -1);
+    private final LongProperty mediaDuration = new SimpleLongProperty(this, "mediaDuration", 0);
+    public static final long TRACK_LENGTH = 30_000L;
+    public static final int TRACK_LENGTH_SECONDS = 30;
     //private boolean playCounted = false;
 
 
@@ -32,15 +33,15 @@ public class MediaService {
         MediaPlayerEventListener mediaPlayerEventListener = new MediaPlayerEventAdapter() {
             @Override
             public void finished(final MediaPlayer mediaPlayer) {
-                Track nextTrack = PlaylistNavigationService.getInstance().playNext();
-                if (nextTrack != null && !mediaPlayer.controls().getRepeat()) {
-                    mediaPlayer.submit(() -> loadTrack(nextTrack));
+                if(!mediaPlayer.controls().getRepeat()) {
+                    Platform.runLater(() -> PlaylistNavigationService.getInstance().playNext());
                 }
             }
 
             @Override
-            public void playing(final MediaPlayer mediaPlayer) {}
-
+            public void lengthChanged(MediaPlayer mediaPlayer, long length) {
+                Platform.runLater(() -> mediaDuration.set(length));
+            }
         };
         mediaPlayer.events().addMediaPlayerEventListener(mediaPlayerEventListener);
     }
@@ -52,29 +53,29 @@ public class MediaService {
         return instance;
     }
 
-    public Track getCurrentTrack() {
-        return currentTrack;
+
+    public void loadTrack(int trackId) {
+        if (mediaPlayer == null) return;
+
+        mediaPlayer.controls().stop();
+        mediaDuration.set(0);
+
+        /* TODO: playcount task setup */
+
+        publishTrack(trackId);
+
+        boolean success = mediaPlayer.media().play(BASE_STREAM_URL + trackId);
+
+        if (!success) {
+            System.err.println("Failed to play track: " + trackId);
+        }
     }
 
-    public void loadTrack(Track track) {
-        // VLCJ player setup
-        if (mediaPlayer != null) {
-            mediaPlayer.controls().stop();
-        }
-        if (playCountTask != null && !playCountTask.isDone()) {
-            playCountTask.cancel(true);
-        }
-        if (currentTrack != null && currentTrack.isPlaying()) {
-            currentTrack.setPlaying(false);
-        }
-        track.setPlaying(true);
-        //playCounted = false;
-        currentTrack = track;
-        notifyTrackChangeListeners(track);
-
-        boolean success = mediaPlayer.media().play(BASE_STREAM_URL + track.getTrack_id());
-        if (!success) {
-            System.err.println("Failed to play track: " + track.getTrack_id());
+    private void publishTrack(int trackId) { // set the current track id to update subscribers
+        if (Platform.isFxApplicationThread()) {
+            currentTrackId.set(trackId);
+        } else {
+            Platform.runLater(() -> currentTrackId.set(trackId));
         }
     }
 
@@ -87,10 +88,6 @@ public class MediaService {
 
     public long getCurrentTime() {
         return mediaPlayer != null ? mediaPlayer.status().time() : 0;
-    }
-
-    public long getMediaDuration() {
-        return mediaPlayer != null ? mediaPlayer.media().info().duration() : 0;
     }
 
     public void setRepeat(boolean repeat) {
@@ -123,12 +120,6 @@ public class MediaService {
         return mediaPlayer != null && mediaPlayer.status().isPlaying();
     }
 
-    public void addTrackChangeListener(Consumer<Track> listener) {
-        trackChangeListeners.add(listener);
-        if (currentTrack != null) {
-            listener.accept(currentTrack);
-        }
-    }
 
     public void dispose() {
         if (mediaPlayer != null) {
@@ -152,11 +143,6 @@ public class MediaService {
         }
     }
 
-    private void notifyTrackChangeListeners(Track track) {
-        for (Consumer<Track> listener : trackChangeListeners) {
-            listener.accept(track);
-        }
-    }
 
     public boolean isMuted(){
         return mediaPlayer.audio().isMute();
@@ -168,6 +154,26 @@ public class MediaService {
 
     public void unmute() {
         mediaPlayer.audio().setMute(false);
+    }
+
+    public ReadOnlyIntegerProperty currentTrackIdProperty() {
+        return currentTrackId;
+    }
+
+    public int getCurrentTrackId() {
+        return currentTrackId.get();
+    }
+
+    public ReadOnlyLongProperty mediaDurationProperty() {
+        return mediaDuration;
+    }
+
+    public long getMediaDuration(){
+        return mediaDuration.get();
+    }
+
+    public long getTrackLength(){
+        return TRACK_LENGTH;
     }
 
 

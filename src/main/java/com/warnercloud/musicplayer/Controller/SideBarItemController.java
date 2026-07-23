@@ -1,17 +1,16 @@
 package com.warnercloud.musicplayer.Controller;
 
 import com.warnercloud.musicplayer.Model.PlaylistData;
+import com.warnercloud.musicplayer.Utils.CustomConsumers;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-
-import java.util.function.Consumer;
 
 public class SideBarItemController {
     @FXML public HBox sideBarItemParent;
     @FXML public Label playlistLabel;
     private PlaylistData playlist;
-    private Consumer<Integer> onPlaylistSelected;
+    private CustomConsumers.TripleConsumer<Integer, String, String> onPlaylistSelected;
     private boolean isHovered = false;
 
     public void createItem(PlaylistData playlist) {
@@ -25,14 +24,14 @@ public class SideBarItemController {
         playlistLabel.setText(playlist.getTitle());
     }
 
-    public void setOnplaylistSelected(Consumer<Integer> onPlaylistSelected) {
+    public void setOnplaylistSelected(CustomConsumers.TripleConsumer<Integer, String, String> onPlaylistSelected) {
         this.onPlaylistSelected = onPlaylistSelected;
     }
 
     private void setOnClick(){
         sideBarItemParent.setOnMouseClicked((event) -> {
             if (onPlaylistSelected != null) {
-                onPlaylistSelected.accept(playlist.getPlaylist_id());
+                onPlaylistSelected.accept(playlist.getPlaylist_id(), playlist.getTitle(), playlist.getDescription());
             }
         });
     }

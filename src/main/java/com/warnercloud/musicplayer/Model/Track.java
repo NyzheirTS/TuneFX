@@ -6,6 +6,8 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 public class Track {
@@ -18,8 +20,9 @@ public class Track {
     private String artist_name;
     private String album_title;
     private int playorder;
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
-    private final IntegerProperty playCount = new SimpleIntegerProperty(0);
+    //private final IntegerProperty playCount = new SimpleIntegerProperty(0);
     private final BooleanProperty playing = new SimpleBooleanProperty(false);
 
 
@@ -35,8 +38,8 @@ public class Track {
         this.track_id = track_id;
     }
 
-    public Date getDate_created() {
-        return date_created;
+    public String getDate_created() {
+        return sdf.format(date_created);
     }
 
     public void setDate_created(Date date_created) {
@@ -103,8 +106,8 @@ public class Track {
     public boolean isPlaying() {return playing.get();}
     public void setPlaying(boolean playing) {this.playing.set(playing);}
 
-    public IntegerProperty playCountProperty() {return playCount;}
+    /*public IntegerProperty playCountProperty() {return playCount;}
     public void incrementPlayCount() {Platform.runLater(() -> playCount.set(playCount.get() + 1));}
-    public int getPlayCount() { return playCount.get(); }
+    public int getPlayCount() { return playCount.get(); }*/
 
 }

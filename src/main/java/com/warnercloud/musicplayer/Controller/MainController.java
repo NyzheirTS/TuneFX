@@ -50,17 +50,4 @@ public class MainController implements Initializable {
         });
     }
 
-
-    /*private void getPlaylists(String url) throws IOException {
-
-        String json = APIService.getInstance().apiCall(url);
-        System.out.println(json);
-
-        Track[] trackArray = JsonUtil.fromJson(json, Track[].class);
-
-        List<Track> tracks = new ArrayList<>(Arrays.asList(trackArray));
-
-        PlaylistNavigationService.getInstance().initPlaylistService(tracks);
-    }*/
-
 }

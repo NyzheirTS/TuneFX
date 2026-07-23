@@ -1,10 +1,10 @@
 package com.warnercloud.musicplayer.Controller;
 
 import com.warnercloud.musicplayer.FXCustomSkins.CustomSliderBar;
-import com.warnercloud.musicplayer.Model.Track;
 import com.warnercloud.musicplayer.Service.MediaService;
 import com.warnercloud.musicplayer.Service.PlaylistNavigationService;
 import com.warnercloud.musicplayer.Utils.TimeUtils;
+import com.warnercloud.musicplayer.Utils.TrackCatalog;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -60,28 +60,50 @@ public class MediaBarController {
     private long volume = 100;
     private boolean shuffled = false;
     private boolean isPlaying = false;
-    private static final String BASE_IMAGE_URL = "https://api.warnercloud.com/api/image/";
+    private static final String BASE_IMAGE_URL = "https://api.warnercloud.com/api/thumbnail/";
 
-    public MediaBarController() {
-        MediaService.getInstance().addTrackChangeListener(this::updateTrack);
-    }
+    public MediaBarController() {}
 
     public void initUI(){
         initSeekBar();
         initVolumeControls();
-        updateShuffleIcon(PlaylistNavigationService.getInstance().isIsShuffled());
+        MediaService mediaService = MediaService.getInstance();
+        mediaService.currentTrackIdProperty().addListener((observable, oldValue, newValue) -> {
+            updateTrack(newValue.intValue());
+        });
+
+        int currentTrackId = mediaService.getCurrentTrackId();
+        if(currentTrackId != -1){
+            updateTrack(currentTrackId);
+        }
+        //updateShuffleIcon(PlaylistNavigationService.getInstance().isIsShuffled());
     }
 
-    private void updateTrack(Track track) {
-        Platform.runLater(() -> {
-            albumCover.setImage(new Image(BASE_IMAGE_URL+track.getTrack_id(), 93, 93, true, true, true));
+    private void updateTrack(int trackId) {
+        TrackCatalog.getInstance().findById(trackId).ifPresent(track -> {
+            if (timeline != null) {
+                timeline.stop();
+            }
+
+            updatingValue = true;
+            try {
+                seekBar.setValue(0);
+                runtimeLabel.setText("0:00");
+                durationLabel.setText(
+                        TimeUtils.formatDuration(MediaService.TRACK_LENGTH_SECONDS)
+                );
+            } finally {
+                updatingValue = false;
+            }
+
+            albumCover.setImage(new Image(
+                    BASE_IMAGE_URL + track.getTrack_id(),
+                    93, 93, true, true, true
+            ));
             artistLabel.setText(track.getArtist_name());
             songLabel.setText(track.getTitle());
-            durationLabel.setText(TimeUtils.formatDuration(track.getDuration()));
-            // Start playback immediately
-            MediaService.getInstance().play();
+
             updatePausePlayIcon(true);
-            // Start polling for progress updates if playback has started
             startPlaybackPolling();
         });
     }
@@ -110,7 +132,7 @@ public class MediaBarController {
     private void volumeSliderValueProperty() {
         volumeSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastSeekTime < 200) {
+            if (currentTime - lastVolumeTime < 200) {
                 return;
             }
             lastVolumeTime = currentTime;
@@ -123,7 +145,7 @@ public class MediaBarController {
         volumeSlider.setOnScroll(scrollEvent -> {
             volume -= (long) (scrollEvent.getDeltaY() * -0.25 );
             volume = Math.round(volume / 10.0) * 10;
-            volume = Math.max(0, Math.min(100, volume));
+            volume = Math.clamp(volume, 0, 100);
 
             System.out.println("volume " + volume);
 
@@ -135,12 +157,17 @@ public class MediaBarController {
         });
     }
 
-    private void seekBaronValueInvalidated(Observable obs){
-        if (!updatingValue){
-            MediaService media = MediaService.getInstance();
-            double ms = media.getMediaDuration() * seekBar.getValue();
-            media.seek((long) ms);
+    private void seekBaronValueInvalidated(Observable observable) {
+        if (updatingValue) {
+            return;
         }
+
+        long targetMillis = (long) (
+                MediaService.getInstance().getMediaDuration()
+                        * seekBar.getValue()
+        );
+
+        MediaService.getInstance().seek(targetMillis);
     }
 
     private void seekBaronValueChangingChange(ObservableValue<? extends Boolean> obs, Boolean oldValue, Boolean newValue) {
@@ -162,19 +189,32 @@ public class MediaBarController {
         }
 
         timeline = new Timeline(new KeyFrame(Duration.millis(250), event -> {
-            if (!seekBar.isValueChanging()) {//&& MediaService.getInstance().isPlaying()) {
-                updatingValue = true;
-                long currentTime = MediaService.getInstance().getCurrentTime();
-                long totalDuration = MediaService.getInstance().getMediaDuration();
-                try {
-                    double progress = (double) currentTime / totalDuration;
-                    seekBar.setValue(progress);
-                    runtimeLabel.setText(TimeUtils.formatDuration((int) currentTime));
-                } finally {
-                    updatingValue = false;
-                }
+            if (seekBar.isValueChanging()) {
+                return;
+            }
+
+            long sampleDuration = MediaService.TRACK_LENGTH;
+            long currentTime = MediaService.getInstance().getCurrentTime();
+
+            // VLC may briefly expose the old track's time after stop()/play().
+            if (currentTime < 0 || currentTime > sampleDuration) {
+                return;
+            }
+
+            double progress = (double) currentTime / sampleDuration;
+            progress = Math.clamp(progress, 0.0, 1.0);
+
+            updatingValue = true;
+            try {
+                seekBar.setValue(progress);
+                runtimeLabel.setText(
+                        TimeUtils.formatDuration((int) (currentTime / 1000))
+                );
+            } finally {
+                updatingValue = false;
             }
         }));
+
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
     }
@@ -200,34 +240,18 @@ public class MediaBarController {
 
     @FXML
     public void resetGoBackFunction(ActionEvent event) {
-        if (PlaylistNavigationService.getInstance().peekPrevious() != null) {
-            Track previousTrack = PlaylistNavigationService.getInstance().playPrevious();
-            loadTrack(previousTrack);
-        } else {
-            System.out.println("No Previous Track");
-        }
+      PlaylistNavigationService.getInstance().playPrevious();
     }
 
     @FXML
     public void skipTrackFunction(ActionEvent event) {
-        if (PlaylistNavigationService.getInstance().peekNext() != null) {
-            Track nextTrack = PlaylistNavigationService.getInstance().playNext();
-            loadTrack(nextTrack);
-        } else {
-            System.out.println("No Next Track");
-        }
+        PlaylistNavigationService.getInstance().playNext();
     }
 
     @FXML
     public void repeatTracksFunction(ActionEvent event) {
     }
 
-    private void loadTrack(Track track) {
-        // MediaService used to load and prepare the track
-        MediaService.getInstance().loadTrack(track);
-        updateTrack(track);
-        Platform.runLater(this::startPlaybackPolling);
-    }
 
 
     @FXML

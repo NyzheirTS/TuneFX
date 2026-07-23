@@ -3,6 +3,7 @@ package com.warnercloud.musicplayer.Service;
 import com.warnercloud.musicplayer.Model.Track;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import uk.co.caprica.vlcj.player.list.PlaybackMode;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -11,22 +12,14 @@ public class PlaylistNavigationService {
 
     private static PlaylistNavigationService instance;
 
-    private final List<Track> allTracks = new ArrayList<>();
-    private final List<Track> playbackQueue = new ArrayList<>();
-    private final List<Track> filteredTracks = new ArrayList<>();
-    private final List<Track> activePlaylist = new ArrayList<>();
-    private final Deque<Track> playNextQueue = new LinkedList<>();
+    private final List<Integer> playbackQueue = new ArrayList<>();
+    private final List<Integer> tempSavePlaybackQueue = new ArrayList<>();
+    private final Deque<Integer> playNextQueue = new ArrayDeque<>();
 
-    private final List<Consumer<List<Track>>> allTrackListeners = new ArrayList<>();
-    private final List<Consumer<List<Track>>> queueListeners = new ArrayList<>();
-    private final List<Consumer<List<Track>>> trackFilterListeners = new ArrayList<>();
-    private final List<Consumer<Integer>> indexListeners = new ArrayList<>();
+    private int currentIndex = -1;
+    private int currentTrackId = -1;
 
-    private Integer currentTrackId = null;
-    private String currentPlaylistName = null;
-
-    private final BooleanProperty isShuffled = new SimpleBooleanProperty(false);
-    private boolean isShuffleApplied = false;
+    private final BooleanProperty isShuffled = new SimpleBooleanProperty(false);;
 
     private PlaylistNavigationService() {}
 
@@ -37,42 +30,19 @@ public class PlaylistNavigationService {
         return instance;
     }
 
-    public void initPlaylistService(List<Track> tracks) {
-        allTracks.clear();
-        allTracks.addAll(tracks);
-        filteredTracks.clear();
-        filteredTracks.addAll(allTracks);
-        notifyTrackConsumers();
-    }
-
-    public void setPlaybackQueue(List<Track> tracks) {
+    public void startPlaybackFrom(int trackId, List<Integer> trackIds) {
         playbackQueue.clear();
-        playbackQueue.addAll(tracks);
-        resetCursor();
-        notifyQueueConsumers();
-    }
+        playbackQueue.addAll(trackIds);
+        playNextQueue.clear();
 
-    public void startPlaybackFrom(Track clickedTrack) {
-        if (clickedTrack == null) return;
+        currentIndex = playbackQueue.indexOf(trackId);
 
-        int startIndex = indexOfInFilteredTracks(clickedTrack);
-        if (startIndex == -1) return;
-
-        activePlaylist.clear();
-        activePlaylist.addAll(filteredTracks);
-
-        if (isShuffled.get()) {
-            isShuffleApplied = true;
-            List<Track> tail = new ArrayList<>(activePlaylist.subList(startIndex, activePlaylist.size()));
-            Collections.shuffle(tail);
-            setPlaybackQueue(tail);
-        } else {
-            isShuffleApplied = false;
-            setPlaybackQueue(new ArrayList<>(activePlaylist));
+        if (currentIndex == -1) {
+            return;
         }
 
-        currentTrackId = clickedTrack.getTrack_id();
-        MediaService.getInstance().loadTrack(clickedTrack);
+        MediaService.getInstance().loadTrack(trackId);
+        System.out.println(playbackQueue.stream().toList());
     }
 
     public void setIsShuffled(boolean shuffled){
@@ -81,147 +51,74 @@ public class PlaylistNavigationService {
     }
 
     private void regenerateQueueBasedOnShuffle(){
-        if(activePlaylist.isEmpty()) return;
-        Track current = getCurrentTrack();
-        if(isShuffled.get()) shuffleOn(current);
-        else shuffleOff(current);
+        if(isShuffled.get()) shuffleOn();
+        else shuffleOff();
     }
 
-    private void shuffleOn(Track current){
-        List<Track> queue = new ArrayList<>();
-        List<Track> rest = new ArrayList<>();
+    private void shuffleOn() {
+        if (playbackQueue.isEmpty()) return;
+        tempSavePlaybackQueue.clear();
+        tempSavePlaybackQueue.addAll(playbackQueue);
 
-        if(current != null){
-            for(Track t: activePlaylist){
-                if(t.getTrack_id()!=current.getTrack_id()) rest.add(t);
-            }
-            Collections.shuffle(rest);
-            queue.add(current);
-            queue.addAll(rest);
-        }else{
-            queue.addAll(activePlaylist);
-            Collections.shuffle(queue);
-        }
+        currentTrackId = playbackQueue.get(currentIndex);
+        playbackQueue.remove(currentIndex);
+        Collections.shuffle(playbackQueue);
+        playbackQueue.addFirst(currentTrackId);
+        //System.out.println("Shuffle On: " + playbackQueue.stream().toList());
 
-        isShuffleApplied=true;
-        setPlaybackQueue(queue);
-        if(current!=null) currentTrackId=current.getTrack_id();
+        currentIndex = playbackQueue.indexOf(currentTrackId);
     }
 
-    private void shuffleOff(Track current){
-        isShuffleApplied=false;
-        setPlaybackQueue(new ArrayList<>(activePlaylist));
-        if(current!=null) currentTrackId=current.getTrack_id();
-    }
-
-    private int indexOfInFilteredTracks(Track track){
-        for(int i=0;i<filteredTracks.size();i++){
-            if(filteredTracks.get(i).getTrack_id()==track.getTrack_id()) return i;
-        }
-        return -1;
-    }
-
-    private int getCurrentIndexInQueue(){
-        if(currentTrackId==null) return -1;
-        for(int i=0;i<playbackQueue.size();i++){
-            if(playbackQueue.get(i).getTrack_id()==currentTrackId) return i;
-        }
-        return -1;
-    }
-
-    public Track getCurrentTrack(){
-        if(currentTrackId==null) return null;
-        return findTrackById(playbackQueue,currentTrackId);
-    }
-
-    private Track findTrackById(List<Track> list,int id){
-        for(Track t:list){
-            if(t.getTrack_id()==id) return t;
-        }
-        return null;
-    }
-
-    public Track playNext(){
-        if(!playNextQueue.isEmpty()) return playNextQueue.pop();
-        int index=getCurrentIndexInQueue();
-        if(index!=-1 && index+1<playbackQueue.size()){
-            Track t=playbackQueue.get(index+1);
-            currentTrackId=t.getTrack_id();
-            return t;
-        }
-        return null;
-    }
-
-    public Track playPrevious(){
-        int index=getCurrentIndexInQueue();
-        if(index>0){
-            Track t=playbackQueue.get(index-1);
-            currentTrackId=t.getTrack_id();
-            return t;
-        }
-        return null;
-    }
-
-    public Track peekNext(){
-        int i=getCurrentIndexInQueue();
-        return (i!=-1 && i+1<playbackQueue.size())?playbackQueue.get(i+1):null;
-    }
-
-    public Track peekPrevious(){
-        int i=getCurrentIndexInQueue();
-        return i>0?playbackQueue.get(i-1):null;
-    }
-
-    public void addToPlayNextQueue(Track t){ playNextQueue.add(t); }
-
-    public void filterTracks(Set<Integer> trackIds,String playlistName){
-        if(Objects.equals(currentPlaylistName,playlistName)) return;
-        filteredTracks.clear();
-        for(Track t:allTracks){
-            if(trackIds.contains(t.getTrack_id())) filteredTracks.add(t);
-        }
-        currentPlaylistName=playlistName;
-        notifyTrackFilterConsumers();
-    }
-
-    public void addTrackToQueue(Track t){
-        int index=getCurrentIndexInQueue();
-        if(index==-1) playbackQueue.add(t);
-        else playbackQueue.add(index+1,t);
-    }
-
-    public void resetCursor(){ currentTrackId=null; }
-
-    public void clearPlaybackQueue(){
+    private void shuffleOff() {
+        if (playbackQueue.isEmpty()) return;
+        //int originalIndex = tempSavePlaybackQueue.indexOf(currentTrackId);
         playbackQueue.clear();
-        resetCursor();
+        playbackQueue.addAll(tempSavePlaybackQueue);
+        //System.out.println("Shuffle Off: " + playbackQueue.stream().toList());
+        //System.out.println("Temp SubList: " + tempSavePlaybackQueue.subList(originalIndex, tempSavePlaybackQueue.size()));
+        currentIndex = tempSavePlaybackQueue.indexOf(currentTrackId);
     }
+
+
+    public boolean playNext() {
+        if (!playNextQueue.isEmpty()) {
+            MediaService.getInstance().loadTrack(playNextQueue.removeFirst());
+            return true;
+        }
+
+        if (currentIndex + 1 >= playbackQueue.size()) {
+            return false;
+        }
+
+        currentIndex++;
+        currentTrackId = playbackQueue.get(currentIndex);
+        MediaService.getInstance().loadTrack(playbackQueue.get(currentIndex));
+        return true;
+    }
+
+
+    public boolean playPrevious(){
+        if (currentIndex <= 0){
+            return false;
+        }
+        currentIndex--;
+        currentTrackId = playbackQueue.get(currentIndex);
+        MediaService.getInstance().loadTrack(playbackQueue.get(currentIndex));
+        return true;
+    }
+
+    public List<Integer> getPlaybackQueue(){
+        return List.copyOf(playbackQueue);
+    }
+
+
+    public void addToPlayNextQueue(int TrackId){
+        playNextQueue.addLast(TrackId);
+    }
+
 
     public boolean isIsShuffled(){ return isShuffled.get(); }
 
-    private void notifyTrackConsumers(){
-        List<Track> copy=List.copyOf(filteredTracks);
-        for(var c:allTrackListeners) c.accept(copy);
-    }
-
-    private void notifyQueueConsumers(){
-        List<Track> copy=List.copyOf(playbackQueue);
-        for(var c:queueListeners) c.accept(copy);
-    }
-
-    private void notifyTrackFilterConsumers(){
-        List<Track> copy=List.copyOf(filteredTracks);
-        for(var c:trackFilterListeners) c.accept(copy);
-    }
-
-    private void notifyIndexConsumers(Integer index){
-        for(var c:indexListeners) c.accept(index);
-    }
-
-    public void addIndexListiner(Consumer<Integer> c){ indexListeners.add(c);}
-    public void addListFullListener(Consumer<List<Track>> c){ allTrackListeners.add(c);}
-    public void addQueueListeners(Consumer<List<Track>> c){ queueListeners.add(c);}
-    public void addTrackFilterListener(Consumer<List<Track>> c){ trackFilterListeners.add(c);}
 }
 
 
