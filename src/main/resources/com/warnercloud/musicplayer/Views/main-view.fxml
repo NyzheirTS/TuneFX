@@ -2,19 +2,9 @@
 
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.StackPane?>
-<?import javafx.scene.layout.VBox?>
 
-<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.MainController">
+<StackPane xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.MainController">
    <children>
       <BorderPane fx:id="root" style="-fx-background-color: black;" />
-      <BorderPane fx:id="popup_root" visible="false">
-         <center>
-            <StackPane focusTraversable="true" BorderPane.alignment="CENTER">
-               <children>
-                  <VBox fx:id="form_container" alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" prefWidth="450.0" />
-               </children>
-            </StackPane>
-         </center>
-      </BorderPane>
    </children>
 </StackPane>

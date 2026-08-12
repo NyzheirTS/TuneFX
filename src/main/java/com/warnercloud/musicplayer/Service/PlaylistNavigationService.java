@@ -1,12 +1,9 @@
 package com.warnercloud.musicplayer.Service;
 
-import com.warnercloud.musicplayer.Model.Track;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import uk.co.caprica.vlcj.player.list.PlaybackMode;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 public class PlaylistNavigationService {
 
@@ -19,7 +16,7 @@ public class PlaylistNavigationService {
     private int currentIndex = -1;
     private int currentTrackId = -1;
 
-    private final BooleanProperty isShuffled = new SimpleBooleanProperty(false);;
+    private final BooleanProperty isShuffled = new SimpleBooleanProperty(false);
 
     private PlaylistNavigationService() {}
 

@@ -12,7 +12,7 @@
 
 <HBox fx:id="parent" alignment="CENTER" prefHeight="56.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.ListItemController">
    <children>
-      <StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="48.0" prefWidth="48.0">
+      <StackPane alignment="BOTTOM_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="48.0" prefWidth="48.0">
          <HBox.margin>
             <Insets />
          </HBox.margin>
@@ -20,7 +20,7 @@
             <ImageView fx:id="coverArtImg" fitHeight="48.0" fitWidth="48.0" pickOnBounds="true" preserveRatio="true" />
             <ImageView fx:id="playingGif" fitHeight="48.0" fitWidth="48.0" pickOnBounds="true" preserveRatio="true" visible="false">
                <image>
-                  <Image url="@../../../../../../../../../Users/eshas/Downloads/f" />
+                  <Image url="@../Assets/giphy.gif" />
                </image>
             </ImageView>
             <Button fx:id="playButton" mnemonicParsing="false" style="-fx-background-color: transparent;" visible="false">

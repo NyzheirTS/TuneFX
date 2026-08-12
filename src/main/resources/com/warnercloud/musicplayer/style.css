@@ -1,0 +1,70 @@
+.title-bar {
+    -fx-background-color: #080d12;
+
+    -fx-pref-height: 38px;
+    -fx-min-height: 38px;
+    -fx-max-height: 38px;
+
+    -fx-alignment: center-left;
+
+    -fx-padding: 0 0 0 12px;
+
+    -fx-border-color:
+            transparent
+            transparent
+            #16313c
+            transparent;
+
+    -fx-border-width: 0 0 1px 0;
+}
+
+
+.window-title {
+    -fx-text-fill: #e8f4f8;
+
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+
+.window-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+
+    -fx-text-fill: #d8e2e6;
+
+    -fx-font-size: 15px;
+
+    -fx-pref-width: 46px;
+    -fx-min-width: 46px;
+
+    -fx-pref-height: 38px;
+    -fx-min-height: 38px;
+
+    -fx-padding: 0;
+
+    -fx-cursor: hand;
+}
+
+
+.window-button:hover {
+    -fx-background-color:
+            rgba(255, 255, 255, 0.08);
+}
+
+
+.window-button:pressed {
+    -fx-background-color:
+            rgba(255, 255, 255, 0.14);
+}
+
+
+.close-button:hover {
+    -fx-background-color: #c42b1c;
+    -fx-text-fill: white;
+}
+
+
+.close-button:pressed {
+    -fx-background-color: #a82216;
+}

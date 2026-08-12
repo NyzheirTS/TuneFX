@@ -16,6 +16,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.fxmisc.flowless.Cell;
@@ -31,6 +32,7 @@ public class CenterViewController {
     @FXML public Label trackCount;
     @FXML public TextField searchBox;
     @FXML public Label playlistTitle;
+    @FXML public VBox vfContainer;
 
     private int lastSelectedIndex = -1;
     private final ObservableList<Track> selectedTracks = FXCollections.observableArrayList();
@@ -56,6 +58,7 @@ public class CenterViewController {
 
     private void styleVf() {
         vf.setStyle("-fx-background-color: rgba(64, 64, 64, 0.25)");
+        vf.setStyle("-fx-border-color: rgb(64, 64, 64)");
         Rectangle clip = new Rectangle();
         clip.setArcHeight(16);
         clip.setArcWidth(16);

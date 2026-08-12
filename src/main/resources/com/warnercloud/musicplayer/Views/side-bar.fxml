@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox prefHeight="703.0" prefWidth="171.0" spacing="12.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.warnercloud.musicplayer.Controller.SideBarController">
    <children>
-      <HBox prefHeight="75.0" prefWidth="171.0" style="-fx-background-color: blue;" />
-      <VBox fx:id="sidebarContainer" alignment="TOP_RIGHT" spacing="6.0" style="-fx-background-color: rgba(64, 64, 64, 0.25); -fx-background-radius: 16;" VBox.vgrow="ALWAYS" />
+      <HBox alignment="CENTER" prefHeight="75.0" prefWidth="171.0">
+         <children>
+            <ImageView fitHeight="96.0" fitWidth="127.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../Assets/icons8-audio-wave-96.png" />
+               </image>
+            </ImageView>
+         </children></HBox>
+      <VBox fx:id="sidebarContainer" alignment="TOP_RIGHT" spacing="6.0" style="-fx-background-radius: 16; -fx-border-color: rgb(64, 64, 64);" VBox.vgrow="ALWAYS" />
    </children>
    <padding>
       <Insets left="12.0" right="6.0" top="12.0" />

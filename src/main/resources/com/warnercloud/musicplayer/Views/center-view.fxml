@@ -19,12 +19,12 @@
                <children>
                   <VBox alignment="CENTER_LEFT">
                      <children>
-                        <Label fx:id="playlistTitle" prefHeight="85.0" prefWidth="601.0" text="Home" textFill="WHITE">
+                        <Label fx:id="playlistTitle" prefHeight="85.0" prefWidth="601.0" textFill="WHITE">
                            <font>
                               <Font size="52.0" />
                            </font>
                         </Label>
-                        <Label fx:id="trackCount" prefHeight="18.0" prefWidth="146.0" text="100 Tracks" textFill="WHITE">
+                        <Label fx:id="trackCount" prefHeight="18.0" prefWidth="146.0" textFill="WHITE">
                            <VBox.margin>
                               <Insets left="5.0" />
                            </VBox.margin>
@@ -103,4 +103,7 @@
    <padding>
       <Insets left="6.0" right="12.0" />
    </padding>
+   <center>
+      <VBox fx:id="vfContainer" />
+   </center>
 </BorderPane>
